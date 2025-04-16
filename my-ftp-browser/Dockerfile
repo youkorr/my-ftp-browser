@@ -1,28 +1,34 @@
-FROM python:3.9-alpine
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
+FROM ${BUILD_FROM}
 
-# Installer les dépendances système
-RUN apk add --no-cache nginx supervisor lftp
+# Installation des dépendances précompilées Alpine
+RUN apk add --no-cache \
+    python3 \
+    py3-flask \
+    py3-requests \
+    nginx \
+    tzdata
 
-# Créer les répertoires
-RUN mkdir -p /app/ftpbrowser/api /app/ftpbrowser/css /app/ftpbrowser/js /var/log/nginx /run/nginx
+# Copier tous les fichiers dans l'image
+COPY rootfs /
 
-# Installer les packages Python
-RUN pip install --no-cache-dir flask requests
+# Rendre les scripts S6 exécutables
+RUN chmod a+x /etc/s6-overlay/s6-rc.d/*/run \
+    && chmod a+x /etc/s6-overlay/s6-rc.d/*/finish \
+    && chmod a+x /etc/s6-overlay/scripts/*
 
-# Copier les fichiers
-COPY rootfs/ /
+# Créer un utilisateur non-root pour accroître la sécurité
+# RUN adduser -D -H -s /sbin/nologin ftpuser
 
-# Permissions des fichiers
-RUN chmod +x /app/ftpbrowser/api/server.py
+# Préparer le dossier web
+RUN mkdir -p /usr/share/ftpbrowser/api /var/www/localhost/htdocs
 
-# Configurer Supervisor
-COPY supervisor.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Exposer le port
+# Exposer le port utilisé par NGINX
 EXPOSE 8099
 
-# Point d'entrée
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Point d'entrée S6 Overlay
+ENTRYPOINT ["/init"]
+
 
 
 
