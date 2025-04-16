@@ -1,8 +1,4 @@
 #!/usr/bin/with-contenv bashio
-set -e
-
-bashio::log.info "Démarrage du serveur API FTP..."
-
-# Démarrer le serveur API Python
+bashio::log.info "Starting FTP Browser API..."
 cd /usr/share/ftpbrowser/api
 exec python3 server.py
