@@ -1,6 +1,14 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
 
+# Configuration des dépôts Alpine
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/v$(cat /etc/alpine-release | cut -d'.' -f1,2)/main" > /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/v$(cat /etc/alpine-release | cut -d'.' -f1,2)/community" >> /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/apk/repositories
+
+# Mise à jour de l'index des packages
+RUN apk update
+
 # Installation des dépendances précompilées Alpine et des outils de compilation
 RUN apk add --no-cache \
     python3 \
