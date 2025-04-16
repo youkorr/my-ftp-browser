@@ -1,28 +1,47 @@
-FROM python:3.9-alpine
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 
-# Installer les dépendances système
-RUN apk add --no-cache nginx supervisor lftp
+FROM ${BUILD_FROM}
 
-# Créer les répertoires
-RUN mkdir -p /app/ftpbrowser/api /app/ftpbrowser/css /app/ftpbrowser/js /var/log/nginx /run/nginx
+# Installation des dépendances précompilées Alpine
+RUN apk add --no-cache \
+    python3 \
+    py3-flask \
+    py3-requests \
+    py3-werkzeug \
+    py3-click \
+    py3-itsdangerous \
+    py3-jinja2 \
+    py3-markupsafe \
+    py3-dateutil \
+    nginx \
+    tzdata
 
-# Installer les packages Python
-RUN pip install --no-cache-dir flask requests
+# Copie des fichiers
+COPY rootfs /
+COPY run.sh /
 
-# Copier les fichiers
-COPY rootfs/ /
+# Rendre les scripts exécutables
+RUN chmod a+x /run.sh && \
+    find /etc/services.d -type f -name run -exec chmod a+x {} \; && \
+    find /etc/services.d -type f -name finish -exec chmod a+x {} \;
 
-# Permissions des fichiers
-RUN chmod +x /app/ftpbrowser/api/server.py
+# Créer les dossiers nécessaires
+RUN mkdir -p /etc/ftpbrowser /data/ftpbrowser/shares
 
-# Configurer Supervisor
-COPY supervisor.conf /etc/supervisor/conf.d/supervisord.conf
-
-# Exposer le port
+# Port d'exposition
 EXPOSE 8099
 
-# Point d'entrée
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# S6-Overlay comme point d'entrée
+ENTRYPOINT ["/init"]
+
+# Labels
+LABEL \
+    io.hass.name="FTP Browser & Media Server" \
+    io.hass.description="Access FTP servers with a user-friendly web interface" \
+    io.hass.type="addon" \
+    io.hass.version="${BUILD_VERSION}" \
+    maintainer="Your Name <your.email@example.com>"
+
 
 
 
