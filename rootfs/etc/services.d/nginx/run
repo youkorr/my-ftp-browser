@@ -1,4 +1,3 @@
 #!/command/with-contenv bashio
-bashio::log.info "Démarrage du serveur API FTP..."
-cd /usr/share/ftpbrowser/api
-exec python3 server.py
+bashio::log.info "Starting Nginx web server..."
+exec nginx -g "daemon off;"
