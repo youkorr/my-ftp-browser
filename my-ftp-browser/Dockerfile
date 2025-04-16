@@ -1,34 +1,29 @@
-FROM linuxserver/nginx:latest
+FROM python:3.9-alpine
 
-# Installer les dépendances
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    lftp \
-    curl
+# Installer les dépendances système
+RUN apk add --no-cache nginx supervisor lftp
 
-# Installer les packages Python nécessaires
-RUN pip3 install flask requests
+# Créer les répertoires
+RUN mkdir -p /app/ftpbrowser/api /app/ftpbrowser/css /app/ftpbrowser/js /var/log/nginx /run/nginx
 
-# Créer les répertoires nécessaires
-RUN mkdir -p /app/ftpbrowser/api /config
+# Installer les packages Python
+RUN pip install --no-cache-dir flask requests
 
-# Copier les fichiers 
+# Copier les fichiers
 COPY rootfs/ /
 
-# Créer l'utilisateur ftpbrowser
-RUN adduser -D -H ftpbrowser
+# Permissions des fichiers
+RUN chmod +x /app/ftpbrowser/api/server.py
 
-# Permissions
-RUN chmod +x /etc/s6-overlay/s6-rc.d/*/run \
-    && chmod +x /etc/s6-overlay/s6-rc.d/*/finish \
-    && chmod +x /app/ftpbrowser/api/server.py
+# Configurer Supervisor
+COPY supervisor.conf /etc/supervisor/conf.d/supervisord.conf
 
 # Exposer le port
 EXPOSE 8099
 
-# Démarrer avec S6
-ENTRYPOINT ["/init"]
+# Point d'entrée
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+
 
 
 
