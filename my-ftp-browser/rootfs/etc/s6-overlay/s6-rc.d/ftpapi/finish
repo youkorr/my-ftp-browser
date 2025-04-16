@@ -1,3 +1,0 @@
-#!/command/with-contenv bash
-
-echo "FTP Browser API stopped"
