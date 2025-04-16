@@ -1,0 +1,115 @@
+body {
+    background-color: #f5f5f5;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+}
+
+.file-item:hover {
+    background-color: #f8f9fa;
+}
+
+.file-item .bi {
+    font-size: 1.5rem;
+    margin-right: 10px;
+}
+
+.file-item .bi-folder-fill {
+    color: #ffc107;
+}
+
+.file-item .bi-file-earmark {
+    color: #6c757d;
+}
+
+.file-item .bi-file-earmark-music {
+    color: #28a745;
+}
+
+.file-item .bi-file-earmark-image {
+    color: #17a2b8;
+}
+
+.file-item .bi-file-earmark-play {
+    color: #dc3545;
+}
+
+.file-item .bi-file-earmark-text {
+    color: #007bff;
+}
+
+.file-item .bi-file-earmark-pdf {
+    color: #fd7e14;
+}
+
+.file-name {
+    flex-grow: 1;
+}
+
+.file-meta {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-right: 15px;
+}
+
+.file-actions {
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.file-item:hover .file-actions {
+    opacity: 1;
+}
+
+.path-breadcrumb {
+    margin-bottom: 0;
+}
+
+.breadcrumb-item {
+    cursor: pointer;
+}
+
+.breadcrumb-item:hover {
+    text-decoration: underline;
+}
+
+.share-item {
+    margin-bottom: 10px;
+}
+
+.share-title {
+    font-weight: bold;
+}
+
+.share-meta {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.share-actions {
+    margin-top: 5px;
+}
+
+#server-list .active {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.modal-footer {
+    background-color: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+}
+
+#share-expiry {
+    font-weight: bold;
+}
