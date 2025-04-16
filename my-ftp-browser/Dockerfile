@@ -12,36 +12,42 @@ RUN apk add --no-cache \
     curl \
     tzdata
 
-# Mise à jour de pip et installation des dépendances Python
+# Installer les dépendances Python en séparant chaque commande pour une meilleure visibilité des erreurs
 RUN pip3 install --no-cache-dir --upgrade pip && \
-    pip3 install --no-cache-dir \
-        Flask==2.0.1 \
-        requests==2.26.0 \
-        PyJWT==2.1.0 \
-        python-dateutil==2.8.2 \
-        werkzeug==2.0.3
+    pip3 install --no-cache-dir Flask==2.0.1 && \
+    pip3 install --no-cache-dir requests==2.26.0 && \
+    pip3 install --no-cache-dir PyJWT==2.1.0 && \
+    pip3 install --no-cache-dir python-dateutil==2.8.2 && \
+    pip3 install --no-cache-dir gunicorn
 
-# Copie des fichiers de configuration et scripts
-COPY rootfs/ /
+# Copie des fichiers dans l'image
+COPY rootfs / 
+COPY run.sh / 
 
-# Script d'exécution principal
-COPY run.sh /run.sh
-RUN chmod +x /run.sh && \
-    find /etc/services.d -type f -name run -exec chmod +x {} \;
+# Rendre les scripts exécutables
+RUN chmod a+x /run.sh && \
+    find /etc/services.d -type f -name run -exec chmod a+x {} \;
 
-# Port exposé pour l'interface web
+# Configuration de Nginx
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Création du répertoire pour l'interface FTP
+RUN mkdir -p /usr/share/ftpbrowser
+
+# Port d'exposition pour l'interface web
 EXPOSE 8099
 
-# Point d'entrée supervisé par S6
+# Lancer Nginx et l'API Flask
 ENTRYPOINT ["/init"]
 
-# Métadonnées
+# Labels pour la documentation
 LABEL \
     io.hass.name="FTP Browser & Media Server" \
     io.hass.description="Access FTP servers with a user-friendly web interface, share files, and stream media" \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Your Name <your.email@example.com>"
+
 
 
 
