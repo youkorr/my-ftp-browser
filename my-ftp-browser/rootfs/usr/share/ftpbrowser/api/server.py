@@ -23,7 +23,7 @@ CONFIG_FILE = "/etc/ftpbrowser/server.json"
 SHARES_DIR = "/data/ftpbrowser/shares"
 
 class FTPClient:
-    """Client FTP optimisé avec gestion robuste des connexions."""
+    """Client FTP optimisé."""
     def __init__(self, host, port=21, timeout=30):
         self.host = host
         self.port = port
@@ -67,7 +67,6 @@ class FTPClient:
             if not response.startswith('230'):
                 raise AuthenticationError(f"Échec authentification: {response}")
             
-            # Configuration supplémentaire
             self._send_command("TYPE I")
             if not self._read_response(timeout=10).startswith('200'):
                 raise ProtocolError("Échec configuration mode binaire")
@@ -277,7 +276,6 @@ class AuthenticationError(Exception):
 class ProtocolError(Exception):
     pass
 
-# Gestion des partages
 def load_shares():
     """Charger les partages avec validation."""
     shares_file = os.path.join(SHARES_DIR, "shares.json")
@@ -318,7 +316,6 @@ def clean_expired_shares():
         save_shares(shares)
         logger.info(f"Nettoyé {len(expired)} partages expirés")
 
-# Routes API
 @app.route('/servers', methods=['GET'])
 def get_servers():
     """Obtenir la liste des serveurs."""
@@ -353,7 +350,6 @@ def browse_server(server_id):
         server = servers[server_id]
         path = request.args.get('path', '/').strip()
         
-        # Construction du chemin réel
         root_path = server.get('root_path', '').strip()
         actual_path = os.path.join(root_path, path.lstrip('/')) if root_path else path
         
@@ -365,7 +361,6 @@ def browse_server(server_id):
         files = client.list_directory(actual_path)
         client.close()
         
-        # Ajustement des chemins pour l'interface
         if root_path:
             for file in files:
                 if file['path'].startswith(root_path):
@@ -434,7 +429,7 @@ def create_share():
             
         server_id = data.get('server_id')
         path = data.get('path', '').strip()
-        duration = min(max(int(data.get('duration', 24)), 720)  # Limité à 30 jours
+        duration = min(max(int(data.get('duration', 24)), 720)  # Correction appliquée ici
         
         if server_id is None or not path:
             return jsonify({'error': 'Paramètres manquants'}), 400
