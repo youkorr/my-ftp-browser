@@ -529,3 +529,4 @@ document.addEventListener('DOMContentLoaded', function() {
     // Démarrer le rafraîchissement périodique des partages
     setInterval(loadSharedLinks, 60000); // Toutes les minutes
 });
+
