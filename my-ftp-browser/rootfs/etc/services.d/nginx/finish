@@ -1,2 +1,2 @@
-#!/command/with-contenv bashio
-bashio::log.info "Nginx web server stopped"
+#!/usr/bin/with-contenv sh
+nginx -s stop
