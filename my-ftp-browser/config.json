@@ -1,27 +1,19 @@
 {
-  "name": "FTP Browser",
+  "name": "FTP Browser & Media Server",
   "version": "0.1.0",
   "slug": "ftp_browser",
-  "description": "FTP Browser provides a file managing interface to access FTP servers, with features to browse, download, upload and share files",
-  "url": "https://github.com/yourusername/hassio-addons",
-  "arch": [
-    "aarch64",
-    "amd64",
-    "armv7"
-  ],
-  "panel_icon": "mdi:file-network",
-  "map": [
-    "media:rw",
-    "share:rw"
-  ],
+  "description": "Access FTP servers with a user-friendly web interface, share files, and stream media",
+  "url": "https://github.com/yourusername/ha-ftp-browser",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "init": false,
   "ingress": true,
   "ingress_port": 8099,
-  "ports": {
-    "8099/tcp": null
-  },
-  "ports_description": {
-    "8099/tcp": "Web interface (Not required for ingress)"
-  },
+  "panel_icon": "mdi:file-multiple",
+  "homeassistant_api": true,
+  "hassio_api": true,
+  "hassio_role": "default",
   "options": {
     "ftp_servers": [
       {
@@ -30,10 +22,16 @@
         "port": 21,
         "username": "user",
         "password": "pass",
-        "root_path": "/sdcard"
+        "root_path": "/sdcard",
+        "use_ssl": false
       }
     ],
-    "allow_uploads": true
+    "share_settings": {
+      "default_duration": 24,
+      "max_duration": 168,
+      "show_share_link": true
+    },
+    "log_level": "info"
   },
   "schema": {
     "ftp_servers": [
@@ -43,9 +41,23 @@
         "port": "int(1,65535)",
         "username": "str",
         "password": "password",
-        "root_path": "str?"
+        "root_path": "str?",
+        "use_ssl": "bool"
       }
     ],
-    "allow_uploads": "bool"
-  }
+    "share_settings": {
+      "default_duration": "int(1,720)",
+      "max_duration": "int(1,720)",
+      "show_share_link": "bool"
+    },
+    "log_level": "list(trace|debug|info|warning|error)"
+  },
+  "ports": {
+    "8099/tcp": 8099
+  },
+  "ports_description": {
+    "8099/tcp": "Web interface (Not required for Ingress)"
+  },
+  "webui": "http://[HOST]:[PORT:8099]"
 }
+
