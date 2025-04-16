@@ -1,0 +1,5 @@
+#!/command/with-contenv bash
+
+echo "Starting FTP Browser API..."
+cd /app/ftpbrowser/api
+exec python3 server.py
