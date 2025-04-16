@@ -22,6 +22,38 @@ app = Flask(__name__)
 CONFIG_FILE = "/etc/ftpbrowser/server.json"
 SHARES_DIR = "/data/ftpbrowser/shares"
 
+def load_json_file(file_path, default_value=None):
+    """Charge un fichier JSON avec gestion robuste des erreurs."""
+    if default_value is None:
+        default_value = {}
+    
+    try:
+        if not os.path.exists(file_path):
+            return default_value
+            
+        with open(file_path, 'r') as f:
+            content = f.read().strip()
+            if not content:
+                return default_value
+            return json.loads(content)
+    except json.JSONDecodeError as e:
+        logger.error(f"Erreur de décodage JSON dans {file_path}: {e}")
+        return default_value
+    except Exception as e:
+        logger.error(f"Erreur de lecture de {file_path}: {e}")
+        return default_value
+
+def save_json_file(file_path, data):
+    """Sauvegarde des données dans un fichier JSON."""
+    try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        logger.error(f"Erreur d'écriture dans {file_path}: {e}")
+        return False
+
 # Client FTP
 class FTPClient:
     """Client FTP direct."""
@@ -39,13 +71,11 @@ class FTPClient:
             self.control_socket.settimeout(self.timeout)
             self.control_socket.connect((self.host, self.port))
             
-            # Lire le message de bienvenue
             response = self._read_response()
             if not response.startswith('220'):
                 logger.error(f"Message de bienvenue FTP non reçu : {response}")
                 self.close()
                 return False
-            
             return True
             
         except Exception as e:
@@ -56,14 +86,12 @@ class FTPClient:
     def login(self, username, password):
         """S'authentifier au serveur FTP."""
         try:
-            # Envoyer le nom d'utilisateur
             self._send_command(f"USER {username}")
             response = self._read_response()
             if not (response.startswith('230') or response.startswith('331')):
                 logger.error(f"Échec d'authentification (nom d'utilisateur) : {response}")
                 return False
             
-            # Envoyer le mot de passe si nécessaire
             if response.startswith('331'):
                 self._send_command(f"PASS {password}")
                 response = self._read_response()
@@ -71,7 +99,6 @@ class FTPClient:
                     logger.error(f"Échec d'authentification (mot de passe) : {response}")
                     return False
             
-            # Mode binaire
             self._send_command("TYPE I")
             response = self._read_response()
             if not response.startswith('200'):
@@ -94,12 +121,10 @@ class FTPClient:
                     logger.error(f"Échec de changement de répertoire : {response}")
                     return []
             
-            # Mode passif
             data_socket, _ = self._enter_passive_mode()
             if not data_socket:
                 return []
             
-            # Commande LIST
             self._send_command("LIST -la")
             response = self._read_response()
             if not (response.startswith('150') or response.startswith('125')):
@@ -107,7 +132,6 @@ class FTPClient:
                 data_socket.close()
                 return []
             
-            # Lecture du listage
             listing_data = b''
             while True:
                 chunk = data_socket.recv(1024)
@@ -117,12 +141,10 @@ class FTPClient:
             
             data_socket.close()
             
-            # Attendre le message de fin de transfert
             response = self._read_response()
             if not response.startswith('226'):
                 logger.warning(f"Message de fin de transfert non reçu : {response}")
             
-            # Parser le listage
             files = []
             for line in listing_data.decode(self.encoding).splitlines():
                 if not line.strip():
@@ -137,12 +159,10 @@ class FTPClient:
                     size = int(parts[4]) if parts[4].isdigit() else 0
                     name = parts[8]
                     
-                    # Ignorer . et .. 
                     if name in ('.', '..'):
                         continue
                         
                     is_dir = perms.startswith('d')
-                    
                     file_path = os.path.join(path, name)
                     if path == '/':
                         file_path = '/' + name
@@ -168,12 +188,10 @@ class FTPClient:
     def download_file(self, path):
         """Télécharger un fichier et le retourner comme bytes."""
         try:
-            # Mode passif
             data_socket, _ = self._enter_passive_mode()
             if not data_socket:
                 raise Exception("Échec du mode passif")
             
-            # Commande RETR
             self._send_command(f"RETR {path}")
             response = self._read_response()
             if not response.startswith('150'):
@@ -181,7 +199,6 @@ class FTPClient:
                 data_socket.close()
                 raise Exception(f"Échec de récupération : {response}")
             
-            # Téléchargement du fichier en mémoire
             file_data = io.BytesIO()
             while True:
                 chunk = data_socket.recv(8192)
@@ -191,7 +208,6 @@ class FTPClient:
             
             data_socket.close()
             
-            # Attendre le message de fin de transfert
             response = self._read_response()
             if not response.startswith('226'):
                 logger.warning(f"Message de fin de transfert non reçu : {response}")
@@ -212,19 +228,14 @@ class FTPClient:
                 logger.error(f"Échec du mode passif : {response}")
                 return None, None
             
-            # Parser la réponse pour extraire l'IP et le port
             match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
             if not match:
                 logger.error(f"Erreur de parsing de la réponse PASV : {response}")
                 return None, None
                 
-            ip_parts = match.groups()[:4]
-            port_parts = match.groups()[4:]
+            ip = '.'.join(match.groups()[:4])
+            port = (int(match.groups()[4]) << 8) + int(match.groups()[5])
             
-            ip = '.'.join(ip_parts)
-            port = (int(port_parts[0]) << 8) + int(port_parts[1])
-            
-            # Créer le socket de données
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(self.timeout)
             s.connect((ip, port))
@@ -240,8 +251,7 @@ class FTPClient:
         if not self.control_socket:
             raise ConnectionError("Non connecté au serveur FTP")
             
-        cmd_bytes = (command + '\r\n').encode(self.encoding)
-        self.control_socket.sendall(cmd_bytes)
+        self.control_socket.sendall((command + '\r\n').encode(self.encoding))
 
     def _read_response(self):
         """Lire une réponse du serveur FTP."""
@@ -261,7 +271,6 @@ class FTPClient:
             line_str = line.decode(self.encoding).strip()
             response_lines.append(line_str)
             
-            # Vérifier si la réponse multi-ligne est complète
             if line_str[:3].isdigit() and line_str[3:4] == ' ':
                 break
         
@@ -296,30 +305,11 @@ class FTPClient:
 # Gestion des partages
 def load_shares():
     """Charger les partages existants."""
-    shares_file = os.path.join(SHARES_DIR, "shares.json")
-    if not os.path.exists(shares_file):
-        return {}
-    
-    try:
-        with open(shares_file, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Erreur de chargement des partages : {e}")
-        return {}
+    return load_json_file(os.path.join(SHARES_DIR, "shares.json"), {})
 
 def save_shares(shares):
     """Sauvegarder les partages."""
-    shares_file = os.path.join(SHARES_DIR, "shares.json")
-    
-    # Créer le répertoire si nécessaire
-    if not os.path.exists(SHARES_DIR):
-        os.makedirs(SHARES_DIR)
-    
-    try:
-        with open(shares_file, 'w') as f:
-            json.dump(shares, f)
-    except Exception as e:
-        logger.error(f"Erreur de sauvegarde des partages : {e}")
+    save_json_file(os.path.join(SHARES_DIR, "shares.json"), shares)
 
 def clean_expired_shares():
     """Nettoyer les partages expirés."""
@@ -341,10 +331,8 @@ def clean_expired_shares():
 def get_servers():
     """Obtenir la liste des serveurs FTP configurés."""
     try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
+        config = load_json_file(CONFIG_FILE, {"ftp_servers": []})
         
-        # Ne pas renvoyer les mots de passe
         servers = []
         for server in config.get('ftp_servers', []):
             server_copy = server.copy()
@@ -361,17 +349,15 @@ def get_servers():
 def browse_server(server_id):
     """Parcourir un serveur FTP."""
     try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
+        config = load_json_file(CONFIG_FILE, {"ftp_servers": []})
         servers = config.get('ftp_servers', [])
+        
         if server_id >= len(servers):
             return jsonify({'error': 'Serveur non trouvé'}), 404
         
         server = servers[server_id]
         path = request.args.get('path', '/')
         
-        # Si un chemin racine est défini, l'utiliser
         root_path = server.get('root_path', '')
         if root_path and path == '/':
             actual_path = root_path
@@ -386,7 +372,6 @@ def browse_server(server_id):
             files = client.list_directory(actual_path)
             client.close()
             
-            # Transformer les chemins pour les rendre relatifs à la racine virtuelle
             if root_path:
                 for file in files:
                     file_path = file['path']
@@ -411,10 +396,9 @@ def browse_server(server_id):
 def download_file(server_id):
     """Télécharger un fichier depuis le serveur FTP."""
     try:
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
+        config = load_json_file(CONFIG_FILE, {"ftp_servers": []})
         servers = config.get('ftp_servers', [])
+        
         if server_id >= len(servers):
             return jsonify({'error': 'Serveur non trouvé'}), 404
         
@@ -424,7 +408,6 @@ def download_file(server_id):
         if not path:
             return jsonify({'error': 'Chemin non spécifié'}), 400
         
-        # Si un chemin racine est défini, l'utiliser
         root_path = server.get('root_path', '')
         if root_path:
             actual_path = os.path.join(root_path, path.lstrip('/'))
@@ -443,7 +426,7 @@ def download_file(server_id):
                 return send_file(
                     file_data,
                     as_attachment=True,
-                    attachment_filename=filename,
+                    download_name=filename,
                     mimetype='application/octet-stream'
                 )
             except Exception as e:
@@ -460,37 +443,35 @@ def download_file(server_id):
 def create_share():
     """Créer un lien de partage."""
     try:
-        data = request.json
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données JSON manquantes ou invalides'}), 400
+            
         server_id = data.get('server_id')
         path = data.get('path')
-        duration = data.get('duration', 24)  # Heures
+        duration = data.get('duration', 24)
         
         if server_id is None or not path:
             return jsonify({'error': 'Paramètres manquants'}), 400
         
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
+        config = load_json_file(CONFIG_FILE, {"ftp_servers": []})
         servers = config.get('ftp_servers', [])
+        
         if server_id >= len(servers):
             return jsonify({'error': 'Serveur non trouvé'}), 404
         
         server = servers[server_id]
         
-        # Si un chemin racine est défini, l'utiliser
         root_path = server.get('root_path', '')
         if root_path:
             actual_path = os.path.join(root_path, path.lstrip('/'))
         else:
             actual_path = path
         
-        # Créer un token unique
         token = str(uuid.uuid4())
-        
-        # Enregistrer le partage
-        shares = load_shares()
         expiry = time.time() + (duration * 3600)
         
+        shares = load_shares()
         shares[token] = {
             'server_id': server_id,
             'path': actual_path,
@@ -503,7 +484,6 @@ def create_share():
         
         save_shares(shares)
         
-        # URL de partage
         share_url = f"/api/download/{token}"
         
         return jsonify({
@@ -523,7 +503,6 @@ def list_shares():
         shares = load_shares()
         now = time.time()
         
-        # Filtrer les partages expirés
         active_shares = {}
         for token, share in shares.items():
             if share.get('expiry', 0) > now:
@@ -572,10 +551,9 @@ def download_shared(token):
         path = share['path']
         filename = share['filename']
         
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
+        config = load_json_file(CONFIG_FILE, {"ftp_servers": []})
         servers = config.get('ftp_servers', [])
+        
         if server_id >= len(servers):
             return jsonify({'error': 'Serveur non trouvé'}), 404
         
@@ -591,7 +569,7 @@ def download_shared(token):
                 return send_file(
                     file_data,
                     as_attachment=True,
-                    attachment_filename=filename,
+                    download_name=filename,
                     mimetype='application/octet-stream'
                 )
             except Exception as e:
@@ -604,88 +582,11 @@ def download_shared(token):
         logger.error(f"Erreur de téléchargement de fichier partagé : {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/schedule', methods=['POST'])
-def schedule_share():
-    """Planifier un partage avec des options avancées."""
-    try:
-        data = request.json
-        server_id = data.get('server_id')
-        path = data.get('path')
-        schedule = data.get('schedule', {})
-        
-        if not server_id or not path:
-            return jsonify({'error': 'Paramètres manquants'}), 400
-        
-        # Paramètres de planification
-        start_time = schedule.get('start_time')  # Timestamp Unix
-        end_time = schedule.get('end_time')  # Timestamp Unix
-        days = schedule.get('days', [])  # [0-6] Lundi à Dimanche
-        
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
-        servers = config.get('ftp_servers', [])
-        if server_id >= len(servers):
-            return jsonify({'error': 'Serveur non trouvé'}), 404
-        
-        server = servers[server_id]
-        
-        # Si un chemin racine est défini, l'utiliser
-        root_path = server.get('root_path', '')
-        if root_path:
-            actual_path = os.path.join(root_path, path.lstrip('/'))
-        else:
-            actual_path = path
-        
-        # Créer un token unique
-        token = str(uuid.uuid4())
-        
-        # Enregistrer le partage planifié
-        shares = load_shares()
-        
-        # Calculer l'expiration (utiliser end_time si défini, sinon un an)
-        if end_time:
-            expiry = end_time
-        else:
-            expiry = time.time() + (365 * 24 * 3600)  # Un an par défaut
-        
-        shares[token] = {
-            'server_id': server_id,
-            'path': actual_path,
-            'display_path': path,
-            'expiry': expiry,
-            'created': time.time(),
-            'server_name': server['name'],
-            'filename': os.path.basename(path),
-            'scheduled': True,
-            'schedule': {
-                'start_time': start_time,
-                'end_time': end_time,
-                'days': days
-            }
-        }
-        
-        save_shares(shares)
-        
-        # URL de partage
-        share_url = f"/api/download/{token}"
-        
-        return jsonify({
-            'token': token,
-            'url': share_url,
-            'expiry': expiry,
-            'schedule': schedule,
-            'expiry_human': time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(expiry))
-        })
-    except Exception as e:
-        logger.error(f"Erreur de planification de partage : {e}")
-        return jsonify({'error': str(e)}), 500
-
 # Nettoyage périodique des partages expirés
 def periodic_cleanup():
     """Effectuer un nettoyage périodique."""
     while True:
-        time.sleep(3600)  # Toutes les heures
+        time.sleep(3600)
         clean_expired_shares()
 
 # Démarrer le thread de nettoyage
@@ -695,11 +596,9 @@ cleanup_thread.start()
 
 # Démarrer le serveur
 if __name__ == "__main__":
-    # S'assurer que les dossiers existent
     if not os.path.exists(SHARES_DIR):
         os.makedirs(SHARES_DIR)
         
-    # Nettoyer les partages expirés au démarrage
     clean_expired_shares()
     
     logger.info("Démarrage du serveur API FTP Browser")
