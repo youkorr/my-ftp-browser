@@ -5,22 +5,21 @@ set -e
 CONFIG_PATH=/data/options.json
 SERVER_CONFIG=/etc/ftpbrowser/server.json
 
-# Créer les répertoires nécessaires
+# Créer le répertoire de configuration s'il n'existe pas
 mkdir -p /etc/ftpbrowser
 mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
-# Extraire les configurations pour l'API Python (si le fichier existe)
-if [ -f "$CONFIG_PATH" ]; then
-  jq '.' $CONFIG_PATH > $SERVER_CONFIG
-else
-  echo '{"ftp_servers":[]}' > $SERVER_CONFIG
-fi
+# Extraire les configurations pour l'API Python
+jq '.' $CONFIG_PATH > $SERVER_CONFIG
 
 # Définir le niveau de journalisation
-LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
-bashio::log.info "Starting FTP Browser Add-on with log level: $LOG_LEVEL"
+LOG_LEVEL=$(jq --raw-output '.log_level' $CONFIG_PATH)
+bashio::log.level "$LOG_LEVEL"
 
-# Ne pas quitter ce script - S6 a besoin qu'il reste en cours d'exécution
-exec sleep infinity
+bashio::log.info "Démarrage de l'addon FTP Browser & Media Server"
+
+# Démarrer S6 Overlay
+exec /usr/bin/s6-svscan /etc/services.d
+
 
