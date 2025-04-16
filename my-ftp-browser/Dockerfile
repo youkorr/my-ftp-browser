@@ -1,33 +1,31 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
-FROM ${BUILD_FROM}
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
-# Installation des dépendances précompilées Alpine
+# Install dependencies
 RUN apk add --no-cache \
-    python3 \
-    py3-flask \
-    py3-requests \
     nginx \
-    tzdata
+    python3 \
+    py3-pip \
+    py3-flask \
+    py3-ftputil
 
-# Copier tous les fichiers dans l'image
+# Copy root filesystem
 COPY rootfs /
 
-# Rendre les scripts S6 exécutables
-RUN chmod a+x /etc/s6-overlay/s6-rc.d/*/run \
-    && chmod a+x /etc/s6-overlay/s6-rc.d/*/finish \
-    && chmod a+x /etc/s6-overlay/scripts/*
+# Install Python dependencies
+RUN pip3 install --no-cache-dir \
+    flask \
+    ftputil \
+    python-dotenv
 
-# Créer un utilisateur non-root pour accroître la sécurité
-# RUN adduser -D -H -s /sbin/nologin ftpuser
+# Configure nginx
+RUN rm /etc/nginx/http.d/default.conf
 
-# Préparer le dossier web
-RUN mkdir -p /usr/share/ftpbrowser/api /var/www/localhost/htdocs
+# Set permissions
+RUN chmod a+x /etc/services.d/*/* /etc/cont-init.d/*
 
-# Exposer le port utilisé par NGINX
-EXPOSE 8099
-
-# Point d'entrée S6 Overlay
-ENTRYPOINT ["/init"]
+WORKDIR /usr/share/ftpbrowser
+EXPOSE 80
 
 
 
