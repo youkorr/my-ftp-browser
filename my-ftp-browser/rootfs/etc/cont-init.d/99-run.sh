@@ -16,9 +16,8 @@ jq '.' $CONFIG_PATH > $SERVER_CONFIG
 # Définir le niveau de journalisation
 LOG_LEVEL=$(jq --raw-output '.log_level' $CONFIG_PATH)
 bashio::log.level "$LOG_LEVEL"
-
 bashio::log.info "Démarrage de l'addon FTP Browser & Media Server"
 
-# Démarrer S6 Overlay
-exec /usr/bin/s6-svscan /etc/services.d
+# Ne pas essayer de démarrer s6-svscan manuellement
+# Supprimez la ligne: exec /usr/bin/s6-svscan /etc/services.d
 
