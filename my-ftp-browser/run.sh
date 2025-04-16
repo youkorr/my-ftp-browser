@@ -7,26 +7,28 @@ SERVER_CONFIG=/etc/ftpbrowser/server.json
 
 # Créer les répertoires nécessaires
 mkdir -p /etc/ftpbrowser
+mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
-# Charger la configuration pour l'API
+# Extraire les configurations pour l'API Python (si le fichier existe)
 if [ -f "$CONFIG_PATH" ]; then
-  jq '.' "$CONFIG_PATH" > "$SERVER_CONFIG"
+  jq '.' $CONFIG_PATH > $SERVER_CONFIG
 else
-  echo '{"ftp_servers":[]}' > "$SERVER_CONFIG"
+  echo '{"ftp_servers":[]}' > $SERVER_CONFIG
 fi
 
 # Définir le niveau de journalisation
-LOG_LEVEL=$(jq --raw-output '.log_level // "info"' "$CONFIG_PATH")
+LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
 bashio::log.info "Starting FTP Browser Add-on with log level: $LOG_LEVEL"
 
-# Lancer le backend Flask en arrière-plan
-bashio::log.info "Starting Flask backend..."
-python3 /usr/src/app/server.py &
+# Installer Gunicorn si nécessaire
+if ! command -v gunicorn &> /dev/null; then
+  bashio::log.info "Gunicorn n'est pas installé, installation en cours..."
+  pip3 install --no-cache-dir gunicorn
+fi
 
-# Lancer Nginx en mode premier plan (nécessaire avec s6-overlay)
-bashio::log.info "Starting Nginx server..."
-exec nginx -g "daemon off;"
+# Démarrer Gunicorn pour l'API Flask (sur 0.0.0.0 pour écouter sur toutes les interfaces)
+exec gunicorn --bind 0.0.0.0:5000 --workers 4 --access-logfile - --error-logfile - server:app
 
 
 
