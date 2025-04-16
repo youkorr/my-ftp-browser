@@ -7,22 +7,27 @@ SERVER_CONFIG=/etc/ftpbrowser/server.json
 
 # Créer les répertoires nécessaires
 mkdir -p /etc/ftpbrowser
-mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
-# Extraire les configurations pour l'API Python (si le fichier existe)
+# Charger la configuration pour l'API
 if [ -f "$CONFIG_PATH" ]; then
-  jq '.' $CONFIG_PATH > $SERVER_CONFIG
+  jq '.' "$CONFIG_PATH" > "$SERVER_CONFIG"
 else
-  echo '{"ftp_servers":[]}' > $SERVER_CONFIG
+  echo '{"ftp_servers":[]}' > "$SERVER_CONFIG"
 fi
 
 # Définir le niveau de journalisation
-LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
+LOG_LEVEL=$(jq --raw-output '.log_level // "info"' "$CONFIG_PATH")
 bashio::log.info "Starting FTP Browser Add-on with log level: $LOG_LEVEL"
 
-# Ne pas quitter ce script - S6 a besoin qu'il reste en cours d'exécution
-exec sleep infinity
+# Lancer le backend Flask en arrière-plan
+bashio::log.info "Starting Flask backend..."
+python3 /usr/src/app/server.py &
+
+# Lancer Nginx en mode premier plan (nécessaire avec s6-overlay)
+bashio::log.info "Starting Nginx server..."
+exec nginx -g "daemon off;"
+
 
 
 
