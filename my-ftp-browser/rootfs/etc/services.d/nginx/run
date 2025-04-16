@@ -1,2 +1,3 @@
-#!/usr/bin/with-contenv sh
-exec nginx -g "daemon off;"
+#!/usr/bin/with-contenv bashio
+bashio::log.info "Démarrage du serveur web NGINX..."
+exec nginx
