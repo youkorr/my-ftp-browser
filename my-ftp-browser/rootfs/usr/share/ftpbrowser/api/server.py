@@ -429,7 +429,8 @@ def create_share():
             
         server_id = data.get('server_id')
         path = data.get('path', '').strip()
-        duration = min(max(int(data.get('duration', 24)), 720)  # Correction appliquée ici
+        duration = min(max(int(data.get('duration', 24)), 720))
+
         
         if server_id is None or not path:
             return jsonify({'error': 'Paramètres manquants'}), 400
