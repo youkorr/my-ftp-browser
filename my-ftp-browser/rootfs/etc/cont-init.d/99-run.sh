@@ -1,4 +1,4 @@
-#!/usr/bin/env bashio
+#!/usr/bin/with-contenv bashio
 # shellcheck shell=bash
 set -e
 
@@ -15,12 +15,12 @@ mkdir -p /data/ftpbrowser/shares
 jq '.' $CONFIG_PATH > $SERVER_CONFIG
 
 # Définir le niveau de journalisation
-LOG_LEVEL=$(bashio::config.raw 'log_level')
+LOG_LEVEL=$(bashio::config 'log_level')
 bashio::log.level "$LOG_LEVEL"
 
-bashio::log.info "Démarrage de l'addon FTP Browser & Media Server"
+bashio::log.info "Configuration de l'addon FTP Browser & Media Server"
 
-# Timezone configuration (comme dans l'exemple)
+# Timezone configuration
 if bashio::config.has_value 'TZ'; then
     TIMEZONE=$(bashio::config 'TZ')
     bashio::log.info "Setting timezone to $TIMEZONE"
@@ -32,17 +32,20 @@ if bashio::config.has_value 'TZ'; then
     fi
 fi
 
-# Configuration NGINX si nécessaire
-# (ajoutez ici la configuration NGINX similaire à l'exemple si nécessaire)
+# Configuration NGINX pour l'ingress si nécessaire
+FB_BASEURL=$(bashio::addon.ingress_entry)
+export FB_BASEURL
+declare ADDON_PROTOCOL=http
 
-# Démarrer vos services ici
-# Par exemple:
-/chemin/vers/votre/application --option1 --option2 &
+# Generate Ingress configuration
+ingress_port=$(bashio::addon.ingress_port)
+ingress_interface=$(bashio::addon.ip_address)
+sed -i "s|%%port%%|${ingress_port}|g" /etc/nginx/servers/ingress.conf
+sed -i "s|%%interface%%|${ingress_interface}|g" /etc/nginx/servers/ingress.conf
+sed -i "s|%%subpath%%|${FB_BASEURL}/|g" /etc/nginx/servers/ingress.conf
 
-# Attendre que le service soit prêt
-bashio::net.wait_for [PORT] localhost 900 || true
-bashio::log.info "Started !"
+# Créer le fichier de log nginx si nécessaire
+mkdir -p /var/log/nginx && touch /var/log/nginx/error.log
 
-# Exécuter NGINX ou un autre processus qui restera en premier plan
-exec nginx
+bashio::log.info "Configuration terminée"
 
