@@ -1,4 +1,4 @@
-#!/command/with-contenv bashio
+#!/usr/bin/with-contenv bashio
 set -e
 
 # Récupérer la configuration
@@ -10,14 +10,20 @@ mkdir -p /etc/ftpbrowser
 mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
-# Extraire les configurations pour l'API Python
-jq '.' $CONFIG_PATH > $SERVER_CONFIG
+# Extraire les configurations pour l'API Python (si le fichier existe)
+if [ -f "$CONFIG_PATH" ]; then
+  jq '.' $CONFIG_PATH > $SERVER_CONFIG
+else
+  echo '{"ftp_servers":[]}' > $SERVER_CONFIG
+fi
 
 # Définir le niveau de journalisation
-LOG_LEVEL=$(jq --raw-output '.log_level' $CONFIG_PATH)
-bashio::log.level "$LOG_LEVEL"
+LOG_LEVEL=$(jq --raw-output '.log_level // "info"' $CONFIG_PATH)
+bashio::log.info "Starting FTP Browser Add-on with log level: $LOG_LEVEL"
 
-bashio::log.info "Démarrage de l'addon FTP Browser & Media Server"
+# Ne pas quitter ce script - S6 a besoin qu'il reste en cours d'exécution
+exec sleep infinity
+
 
 
 
