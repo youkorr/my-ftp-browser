@@ -1,10 +1,10 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
-
 FROM ${BUILD_FROM}
 
-# Installation des dépendances précompilées Alpine
+# Installation des dépendances précompilées Alpine et des outils de compilation
 RUN apk add --no-cache \
     python3 \
+    py3-pip \
     py3-flask \
     py3-requests \
     py3-werkzeug \
@@ -13,8 +13,22 @@ RUN apk add --no-cache \
     py3-jinja2 \
     py3-markupsafe \
     py3-dateutil \
+    py3-pyjwt \
     nginx \
-    tzdata
+    tzdata \
+    build-base \
+    python3-dev
+
+# Installation des packages Python avec versions spécifiques
+# Si vous avez vraiment besoin de versions spécifiques malgré les packages Alpine
+RUN pip3 install --no-cache-dir \
+    Flask==2.0.1 \
+    requests==2.26.0 \
+    PyJWT==2.1.0 \
+    python-dateutil==2.8.2
+
+# Nettoyage des outils de compilation pour réduire la taille de l'image
+RUN apk del build-base python3-dev
 
 # Copie des fichiers
 COPY rootfs /
