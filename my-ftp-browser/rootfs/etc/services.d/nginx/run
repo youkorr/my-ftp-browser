@@ -1,3 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 bashio::log.info "Démarrage du serveur web NGINX..."
-exec nginx
+exec nginx -g "daemon off;"
+
