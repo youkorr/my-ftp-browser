@@ -1,2 +1,3 @@
 #!/command/with-contenv bashio
-bashio::log.info "Service API FTP arrêté."
+bashio::log.info "FTP Browser API stopped"
+
