@@ -3,10 +3,8 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
 
 # Installation des dépendances précompilées Alpine
-# Utilisation des paquets py3-* pour éviter les problèmes de compilation
 RUN apk add --no-cache \
     python3 \
-    py3-pip \
     py3-flask \
     py3-requests \
     py3-werkzeug \
@@ -16,10 +14,9 @@ RUN apk add --no-cache \
     py3-markupsafe \
     py3-dateutil \
     nginx \
-    curl \
     tzdata
 
-# Copie des fichiers dans l'image
+# Copie des fichiers
 COPY rootfs /
 COPY run.sh /
 
@@ -31,19 +28,20 @@ RUN chmod a+x /run.sh && \
 # Créer les dossiers nécessaires
 RUN mkdir -p /etc/ftpbrowser /data/ftpbrowser/shares
 
-# Port d'exposition pour l'interface web
+# Port d'exposition
 EXPOSE 8099
 
 # S6-Overlay comme point d'entrée
 ENTRYPOINT ["/init"]
 
-# Labels pour la documentation
+# Labels
 LABEL \
     io.hass.name="FTP Browser & Media Server" \
     io.hass.description="Access FTP servers with a user-friendly web interface" \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Your Name <your.email@example.com>"
+
 
 
 
