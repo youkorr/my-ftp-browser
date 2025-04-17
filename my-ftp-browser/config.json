@@ -14,6 +14,9 @@
   "homeassistant_api": true,
   "hassio_api": true,
   "hassio_role": "default",
+  "host_network": true,
+  "privileged": ["NET_ADMIN"],
+  "devices": [],
   "options": {
     "ftp_servers": [
       {
