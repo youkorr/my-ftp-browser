@@ -1,3 +1,6 @@
+# Image de base
+FROM ghcr.io/hassio-addons/base:13.0.0
+
 # Installation des dépendances système
 RUN apk add --no-cache \
     python3 \
