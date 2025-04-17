@@ -25,64 +25,67 @@ SHARES_DIR = "/data/ftpbrowser/shares"
 # Client FTP
 class FTPClient:
     """Client FTP direct."""
-    def __init__(self, host, port=21, timeout=15):
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.control_socket = None
-        self.encoding = 'utf-8'
-        
-    def connect(self):
-        """Se connecter au serveur FTP."""
-        try:
-            self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.control_socket.settimeout(self.timeout)
-            self.control_socket.connect((self.host, self.port))
-            
-            # Lire le message de bienvenue
-            response = self._read_response()
-            if not response.startswith('220'):
-                logger.error(f"Message de bienvenue FTP non reçu : {response}")
-                self.close()
-                return False
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"Erreur de connexion FTP : {e}")
-            self.close()
-            return False
+  struct hostent *ftp_host = gethostbyname(ftp_server_.c_str());
+  if (!ftp_host) {
+    ESP_LOGE(TAG, "Échec de la résolution DNS");
+    return false;
+  }
 
-    def login(self, username, password):
-        """S'authentifier au serveur FTP."""
-        try:
-            # Envoyer le nom d'utilisateur
-            self._send_command(f"USER {username}")
-            response = self._read_response()
-            if not (response.startswith('230') or response.startswith('331')):
-                logger.error(f"Échec d'authentification (nom d'utilisateur) : {response}")
-                return False
-            
-            # Envoyer le mot de passe si nécessaire
-            if response.startswith('331'):
-                self._send_command(f"PASS {password}")
-                response = self._read_response()
-                if not response.startswith('230'):
-                    logger.error(f"Échec d'authentification (mot de passe) : {response}")
-                    return False
-            
-            # Mode binaire
-            self._send_command("TYPE I")
-            response = self._read_response()
-            if not response.startswith('200'):
-                logger.error(f"Échec de configuration du mode binaire : {response}")
-                return False
-                
-            return True
-            
-        except Exception as e:
-            logger.error(f"Erreur d'authentification FTP : {e}")
-            return False
+  sock_ = ::socket(AF_INET, SOCK_STREAM, 0);
+  if (sock_ < 0) {
+    ESP_LOGE(TAG, "Échec de création du socket : %d", errno);
+    return false;
+  }
+
+  // Configuration du socket pour être plus robuste
+  int flag = 1;
+  setsockopt(sock_, SOL_SOCKET, SO_KEEPALIVE, &flag, sizeof(flag));
+  
+  // Augmenter la taille du buffer de réception
+  int rcvbuf = 16384;
+  setsockopt(sock_, SOL_SOCKET, SO_RCVBUF, &rcvbuf, sizeof(rcvbuf));
+
+  struct sockaddr_in server_addr;
+  memset(&server_addr, 0, sizeof(server_addr));
+  server_addr.sin_family = AF_INET;
+  server_addr.sin_port = htons(21);
+  server_addr.sin_addr.s_addr = *((unsigned long *)ftp_host->h_addr);
+
+  if (::connect(sock_, (struct sockaddr *)&server_addr, sizeof(server_addr)) != 0) {
+    ESP_LOGE(TAG, "Échec de connexion FTP : %d", errno);
+    ::close(sock_);
+    sock_ = -1;
+    return false;
+  }
+
+  char buffer[256];
+  int bytes_received = recv(sock_, buffer, sizeof(buffer) - 1, 0);
+  if (bytes_received <= 0 || !strstr(buffer, "220 ")) {
+    ESP_LOGE(TAG, "Message de bienvenue FTP non reçu");
+    ::close(sock_);
+    sock_ = -1;
+    return false;
+  }
+  buffer[bytes_received] = '\0';
+
+  // Authentification
+  snprintf(buffer, sizeof(buffer), "USER %s\r\n", username_.c_str());
+  send(sock_, buffer, strlen(buffer), 0);
+  bytes_received = recv(sock_, buffer, sizeof(buffer) - 1, 0);
+  buffer[bytes_received] = '\0';
+
+  snprintf(buffer, sizeof(buffer), "PASS %s\r\n", password_.c_str());
+  send(sock_, buffer, strlen(buffer), 0);
+  bytes_received = recv(sock_, buffer, sizeof(buffer) - 1, 0);
+  buffer[bytes_received] = '\0';
+
+  // Mode binaire
+  send(sock_, "TYPE I\r\n", 8, 0);
+  bytes_received = recv(sock_, buffer, sizeof(buffer) - 1, 0);
+  buffer[bytes_received] = '\0';
+
+  return true;
+}
             
     def list_directory(self, path='/'):
         """Lister le contenu d'un répertoire."""
