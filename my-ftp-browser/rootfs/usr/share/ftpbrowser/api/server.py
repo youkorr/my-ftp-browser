@@ -221,7 +221,10 @@ class FTPClient:
             ip_parts = match.groups()[:4]
             port_parts = match.groups()[4:]
             
-            ip = '.'.join(ip_parts)
+            # Utiliser l'adresse IP du serveur au lieu de celle renvoyée dans la réponse PASV
+            # ip = '.'.join(ip_parts)  # Ancienne ligne
+            ip = self.host  # Utiliser l'adresse IP du serveur d'origine
+            
             port = (int(port_parts[0]) << 8) + int(port_parts[1])
             
             # Créer le socket de données
