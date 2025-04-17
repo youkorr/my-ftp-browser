@@ -1,0 +1,20 @@
+{
+    "ftp_servers": [
+        {
+            "name": "Serveur FTP Principal",
+            "host": "ftp.example.com",
+            "port": 21,
+            "username": "votre_utilisateur",
+            "password": "votre_mot_de_passe",
+            "root_path": "/"
+        },
+        {
+            "name": "Serveur FTP Secondaire",
+            "host": "ftp2.example.com",
+            "port": 21,
+            "username": "autre_utilisateur",
+            "password": "autre_mot_de_passe",
+            "root_path": "/var/www/html"
+        }
+    ]
+}
