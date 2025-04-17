@@ -2,28 +2,28 @@
   "ftp_servers": [
     {
       "name": "Mon Serveur FTP",
-      "host": "192.168.1.5",  // Adresse IP de votre serveur FTP
-      "port": 21,               // Port FTP par défaut
-      "username": "utilisateur", // Nom d'utilisateur pour accéder au FTP
-      "password": "mot_de_passe", // Mot de passe du FTP
-      "root_path": "/",         // Chemin racine sur le serveur FTP
-      "passive": true,          // Activer le mode passif
-      "timeout": 30             // Délai d'attente (en secondes) pour les connexions
+      "host": "192.168.1.5",  
+      "port": 21,               
+      "username": "utilisateur", 
+      "password": "mot_de_passe", 
+      "root_path": "/",         
+      "passive": true,          
+      "timeout": 30             
     }
   ],
   "share_settings": {
-    "default_duration": 24,      // Durée par défaut des partages en heures
-    "max_duration": 168,         // Durée maximale des partages en heures
-    "show_share_link": true       // Afficher les liens de partage dans l'interface
+    "default_duration": 24,      
+    "max_duration": 168,         
+    "show_share_link": true      
   },
   "allow_hosts": [
-    "192.168.1.0/24",            // Autoriser un sous-réseau entier 192.168.1.*
-    "169.254.0.0/16",            // Autoriser les adresses auto-attribuées
-    "fe80::/10",                  // Préfixe pour Link-Local IPv6
-    "fc00::/7"                   // Préfixe pour IPv6 Unique Local
+    "192.168.1.0/24",            
+    "169.254.0.0/16",            
+    "fe80::/10",                  
+    "fc00::/7"                  
   ],
-  "allow_uploads": true,        // Autoriser les uploads vers le serveur FTP
-  "log_level": "info"           // Niveau de journalisation (trace, debug, info, warning, error)
+  "allow_uploads": true,        
+  "log_level": "info"          
 }
 
 
