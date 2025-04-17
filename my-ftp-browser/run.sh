@@ -1,26 +1,34 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
 set -e
 
 # Récupérer la configuration
 CONFIG_PATH=/data/options.json
 SERVER_CONFIG=/etc/ftpbrowser/server.json
 
-# Créer le répertoire de configuration s'il n'existe pas
+# Créer les répertoires nécessaires
 mkdir -p /etc/ftpbrowser
-mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
 # Extraire les configurations pour l'API Python
 jq '.' $CONFIG_PATH > $SERVER_CONFIG
 
-# Définir le niveau de journalisation
-LOG_LEVEL=$(jq --raw-output '.log_level' $CONFIG_PATH)
-bashio::log.level "$LOG_LEVEL"
+# Informations de démarrage
+bashio::log.info "Démarrage de l'addon FTP Browser"
 
-bashio::log.info "Démarrage de l'addon FTP Browser & Media Server"
+# Débogage
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des fichiers de configuration:"
+ls -la /etc/ftpbrowser/
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des services S6:"
+ls -la /etc/services.d/
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des services FTP-Server:"
+ls -la /etc/services.d/ftp-server/
+bashio::log.info "------------------------------------"
 
-# Démarrer S6 Overlay
-exec /usr/bin/s6-svscan /etc/services.d
+# Le processus S6 va démarrer automatiquement les services
+
 
 
 
