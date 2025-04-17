@@ -19,7 +19,7 @@ logger = logging.getLogger("ftp-browser")
 app = Flask(__name__)
 
 # Charger la configuration
-CONFIG_FILE = "/my-ftp-browser/config.json"
+CONFIG_FILE = "/etc/ftpbrowser/server.json"
 SHARES_DIR = "/data/ftpbrowser/shares"
 
 # Client FTP
@@ -704,6 +704,7 @@ if __name__ == "__main__":
     
     logger.info("Démarrage du serveur API FTP Browser")
     run_simple('0.0.0.0', 5000, app, use_reloader=False)
+
 
 
 
