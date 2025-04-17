@@ -703,6 +703,9 @@ if __name__ == "__main__":
     clean_expired_shares()
     
     logger.info("Démarrage du serveur API FTP Browser")
+    HOST = os.getenv('FTP_BROWSER_HOST', '0.0.0.0')
+    PORT = int(os.getenv('FTP_BROWSER_PORT', 5000))
+    
     run_simple(HOST, PORT, app, use_reloader=False)
 
 
