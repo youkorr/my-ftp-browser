@@ -7,6 +7,7 @@ SERVER_CONFIG=/etc/ftpbrowser/server.json
 
 # Créer les répertoires nécessaires
 mkdir -p /etc/ftpbrowser
+mkdir -p /data/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
 # Charger la configuration pour l'API
