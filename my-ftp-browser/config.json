@@ -1,0 +1,58 @@
+{
+  "name": "FTP Browser & Media Server",
+  "version": "0.1.0",
+  "slug": "ftp_browser",
+  "description": "Access FTP servers with a user-friendly web interface, share files, and stream media",
+  "url": "https://github.com/yourusername/ha-ftp-browser",
+  "arch": ["armhf", "armv7", "aarch64", "amd64", "i386"],
+  "startup": "application",
+  "boot": "auto",
+  "init": false,
+  "ingress": true,
+  "ingress_port": 8099,
+  "panel_icon": "mdi:file-multiple",
+  "homeassistant_api": true,
+  "hassio_api": true,
+  "hassio_role": "default",
+  "options": {
+    "ftp_servers": [
+      {
+        "name": "My FTP Server",
+        "host": "ftp.example.com",
+        "port": 21,
+        "username": "user",
+        "password": "pass",
+        "root_path": "/sdcard",
+        "use_ssl": false
+      }
+    ],
+    "share_settings": {
+      "default_duration": 24,
+      "max_duration": 168,
+      "show_share_link": true
+    },
+    "log_level": "info"
+  },
+  "schema": {
+    "ftp_servers": [
+      {
+        "name": "str",
+        "host": "str",
+        "port": "int(1,65535)",
+        "username": "str",
+        "password": "password",
+        "root_path": "str?",
+        "use_ssl": "bool"
+      }
+    ],
+    "share_settings": {
+      "default_duration": "int(1,720)",
+      "max_duration": "int(1,720)",
+      "show_share_link": "bool"
+    },
+    "log_level": "list(trace|debug|info|warning|error)"
+  },
+  "webui": "http://[HOST]:[PORT:8099]"
+}
+
+
