@@ -232,11 +232,11 @@ class FTPClient:
     
             # Créer le socket de données
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(self.timeout)
+            s.settimeout(60)  # Augmenter le timeout
     
             # Configurer les options du socket
             s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)  # Augmenter la taille du buffer
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)
     
             # Établir la connexion au port de données
             logger.debug(f"Tentative de connexion au port de données : {ip}:{port}")
@@ -247,7 +247,7 @@ class FTPClient:
                     logger.debug("Connexion réussie au port de données")
                     break
                 except socket.timeout:
-                    if time.time() - start_time > 30:  # Timeout global de 30 secondes
+                    if time.time() - start_time > 60:  # Timeout global de 60 secondes
                         logger.error("Timeout : La connexion au port de données a échoué")
                         s.close()
                         return None, None
