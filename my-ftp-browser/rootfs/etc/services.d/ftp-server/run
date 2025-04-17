@@ -1,5 +1,15 @@
 #!/command/with-contenv bashio
-bashio::log.info "Démarrage du serveur API FTP..."
+bashio::log.info "Démarrage du service API FTP Browser..."
+
+# Vérification des chemins et fichiers
+if [ ! -f /usr/share/ftpbrowser/api/server.py ]; then
+    bashio::log.error "Fichier server.py introuvable!"
+    exit 1
+fi
+
+# Aller dans le répertoire de l'API
 cd /usr/share/ftpbrowser/api
+
+# Démarrer le serveur Python
 exec python3 server.py
 
