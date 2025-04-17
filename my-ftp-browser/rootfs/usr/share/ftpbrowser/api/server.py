@@ -25,68 +25,64 @@ SHARES_DIR = "/data/ftpbrowser/shares"
 # Client FTP
 class FTPClient:
     """Client FTP direct."""
-
-    def __init__(self, host, port=21, timeout=10):
+    def __init__(self, host, port=21, timeout=15):
         self.host = host
         self.port = port
         self.timeout = timeout
-        self.sock = None
-
+        self.control_socket = None
+        self.encoding = 'utf-8'
+        
     def connect(self):
         """Se connecter au serveur FTP."""
         try:
-            # Résolution DNS
-            ftp_host = socket.gethostbyname(self.host)
-
-            # Création du socket
-            self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.sock.settimeout(self.timeout)
-
-            # Configuration du socket
-            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-            self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)
-
-            # Connexion au serveur
-            server_address = (ftp_host, self.port)
-            self.sock.connect(server_address)
-
-            # Réception du message de bienvenue
-            response = self.sock.recv(1024).decode('utf-8')
+            self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.control_socket.settimeout(self.timeout)
+            self.control_socket.connect((self.host, self.port))
+            
+            # Lire le message de bienvenue
+            response = self._read_response()
             if not response.startswith('220'):
-                raise Exception(f"Échec de connexion : {response}")
+                logger.error(f"Message de bienvenue FTP non reçu : {response}")
+                self.close()
+                return False
+            
             return True
+            
         except Exception as e:
             logger.error(f"Erreur de connexion FTP : {e}")
+            self.close()
             return False
 
     def login(self, username, password):
-        """Authentification sur le serveur FTP."""
+        """S'authentifier au serveur FTP."""
         try:
             # Envoyer le nom d'utilisateur
-            self.sock.sendall(f"USER {username}\r\n".encode('utf-8'))
-            response = self.sock.recv(1024).decode('utf-8')
-            if not response.startswith('331'):
-                raise Exception(f"Échec de l'authentification utilisateur : {response}")
-
-            # Envoyer le mot de passe
-            self.sock.sendall(f"PASS {password}\r\n".encode('utf-8'))
-            response = self.sock.recv(1024).decode('utf-8')
-            if not response.startswith('230'):
-                raise Exception(f"Échec de l'authentification mot de passe : {response}")
-
+            self._send_command(f"USER {username}")
+            response = self._read_response()
+            if not (response.startswith('230') or response.startswith('331')):
+                logger.error(f"Échec d'authentification (nom d'utilisateur) : {response}")
+                return False
+            
+            # Envoyer le mot de passe si nécessaire
+            if response.startswith('331'):
+                self._send_command(f"PASS {password}")
+                response = self._read_response()
+                if not response.startswith('230'):
+                    logger.error(f"Échec d'authentification (mot de passe) : {response}")
+                    return False
+            
+            # Mode binaire
+            self._send_command("TYPE I")
+            response = self._read_response()
+            if not response.startswith('200'):
+                logger.error(f"Échec de configuration du mode binaire : {response}")
+                return False
+                
             return True
+            
         except Exception as e:
             logger.error(f"Erreur d'authentification FTP : {e}")
             return False
-
-    def close(self):
-        """Fermer la connexion."""
-        if self.sock:
-            try:
-                self.sock.sendall("QUIT\r\n".encode('utf-8'))
-                self.sock.close()
-            except Exception as e:
-                logger.error(f"Erreur de fermeture de connexion FTP : {e}")
             
     def list_directory(self, path='/'):
         """Lister le contenu d'un répertoire."""
@@ -708,6 +704,8 @@ if __name__ == "__main__":
     
     logger.info("Démarrage du serveur API FTP Browser")
     run_simple('0.0.0.0', 5000, app, use_reloader=False)
+
+
 
 
 
