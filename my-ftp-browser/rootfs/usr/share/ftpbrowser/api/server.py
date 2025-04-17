@@ -703,7 +703,7 @@ if __name__ == "__main__":
     clean_expired_shares()
     
     logger.info("Démarrage du serveur API FTP Browser")
-    HOST = 'http://localhost'  # Remplacez par l'IP locale de votre machine
+    HOST = 'localhost'  # Remplacez par l'IP locale de votre machine
     PORT = 5000
     run_simple(HOST, PORT, app, use_reloader=False)
 
