@@ -1,4 +1,10 @@
-#!/usr/bin/with-contenv bashio
-bashio::log.info "Starting Nginx web server..."
+#!/command/with-contenv bashio
+bashio::log.info "Démarrage du service NGINX..."
+
+# Vérification de la configuration nginx
+nginx -t
+
+# Démarrer nginx en mode premier plan
 exec nginx -g "daemon off;"
+
 
