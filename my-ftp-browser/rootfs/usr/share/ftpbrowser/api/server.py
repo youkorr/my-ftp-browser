@@ -206,36 +206,57 @@ class FTPClient:
     def _enter_passive_mode(self):
         """Passer en mode passif et retourner le socket de données."""
         try:
+            # Envoyer la commande PASV
             self._send_command("PASV")
             response = self._read_response()
+            logger.debug(f"Réponse brute PASV : {response}")
+    
+            # Vérifier que la réponse indique un succès
             if not response.startswith('227'):
                 logger.error(f"Échec du mode passif : {response}")
                 return None, None
-            
+    
             # Parser la réponse pour extraire l'IP et le port
-            match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
+            match = re.search(r'\((\d+),(\d+),(\d+),(\d+),(\d+),(\d+)\)', response)
             if not match:
                 logger.error(f"Erreur de parsing de la réponse PASV : {response}")
                 return None, None
-                
+    
             ip_parts = match.groups()[:4]
             port_parts = match.groups()[4:]
-            
-            # Utiliser l'adresse IP du serveur au lieu de celle renvoyée dans la réponse PASV
-            # ip = '.'.join(ip_parts)  # Ancienne ligne
-            ip = self.host  # Utiliser l'adresse IP du serveur d'origine
-            
+    
+            # Calculer l'IP et le port
+            ip = '.'.join(ip_parts)  # Utiliser l'IP renvoyée par le serveur
             port = (int(port_parts[0]) << 8) + int(port_parts[1])
-            
+            logger.debug(f"IP extrait : {ip}, Port extrait : {port}")
+    
             # Créer le socket de données
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.settimeout(self.timeout)
-            s.connect((ip, port))
-            
+    
+            # Configurer les options du socket
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 16384)  # Augmenter la taille du buffer
+    
+            # Établir la connexion au port de données
+            logger.debug(f"Tentative de connexion au port de données : {ip}:{port}")
+            start_time = time.time()
+            while True:
+                try:
+                    s.connect((ip, port))
+                    logger.debug("Connexion réussie au port de données")
+                    break
+                except socket.timeout:
+                    if time.time() - start_time > 30:  # Timeout global de 30 secondes
+                        logger.error("Timeout : La connexion au port de données a échoué")
+                        s.close()
+                        return None, None
+                    time.sleep(1)  # Attendre avant de réessayer
+    
             return s, (ip, port)
-            
+    
         except Exception as e:
-            logger.error(f"Erreur de passage en mode passif : {e}")
+            logger.error(f"Erreur lors du passage en mode passif : {e}")
             return None, None
 
     def _send_command(self, command):
