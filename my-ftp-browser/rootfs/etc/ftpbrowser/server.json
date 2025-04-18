@@ -1,14 +1,14 @@
-# Dans server.py
+
 CONFIG_FILE = "/etc/ftpbrowser/server.json"
 
-# Charger la configuration
+
 def load_config():
     try:
         if os.path.exists(CONFIG_FILE):
             with open(CONFIG_FILE, 'r') as f:
                 return json.load(f)
         else:
-            # Configuration par défaut pour le test
+            
             return {
                 "ftp_servers": [
                     {
