@@ -1,29 +1,16 @@
+{
+  "ftp_servers": [
+    {
+      "name": "Nom de votre serveur",
+      "host": "adresse_du_serveur",
+      "port": 21,
+      "username": "votre_nom_utilisateur",
+      "password": "votre_mot_de_passe",
+      "root_path": "/"
+    }
+  ]
+}
 
-CONFIG_FILE = "/etc/ftpbrowser/server.json"
-
-
-def load_config():
-    try:
-        if os.path.exists(CONFIG_FILE):
-            with open(CONFIG_FILE, 'r') as f:
-                return json.load(f)
-        else:
-            
-            return {
-                "ftp_servers": [
-                    {
-                        "name": "Serveur de test",
-                        "host": "localhost",
-                        "port": 21,
-                        "username": "anonymous",
-                        "password": "",
-                        "root_path": "/"
-                    }
-                ]
-            }
-    except Exception as e:
-        logger.error(f"Erreur de chargement de la configuration: {e}")
-        return {"ftp_servers": []}
 
 
 
