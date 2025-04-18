@@ -15,6 +15,7 @@ RUN apk add --no-cache \
 # Installer les dépendances Python en séparant chaque commande pour une meilleure visibilité des erreurs
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir Flask==2.0.1 && \
+    pip3 install --no-cache-dir Werkzeug==2.0.3 && \
     pip3 install --no-cache-dir requests==2.26.0 && \
     pip3 install --no-cache-dir PyJWT==2.1.0 && \
     pip3 install --no-cache-dir python-dateutil==2.8.2
