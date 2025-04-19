@@ -76,19 +76,23 @@ class FTPClient:
                 return []
 
             self._send_command("LIST -la")
-            if not self._read_response().startswith('150'):
+            response = self._read_response()
+            if not response.startswith('150') and not response.startswith('125'):
                 data_socket.close()
                 return []
 
             listing_data = b''
             while True:
-                chunk = data_socket.recv(4096)
-                if not chunk:
+                try:
+                    chunk = data_socket.recv(4096)
+                    if not chunk:
+                        break
+                    listing_data += chunk
+                except socket.timeout:
                     break
-                listing_data += chunk
 
             data_socket.close()
-            self._read_response()
+            self._read_response()  # Lire la réponse de fin de transfert
             return self._parse_listing(listing_data, path)
         except Exception as e:
             logger.error(f"Erreur list_directory: {str(e)}")
@@ -101,19 +105,23 @@ class FTPClient:
                 raise Exception("Mode passif échoué")
 
             self._send_command(f"RETR {path}")
-            if not self._read_response().startswith('150'):
+            response = self._read_response()
+            if not response.startswith('150') and not response.startswith('125'):
                 data_socket.close()
                 raise Exception("Erreur RETR")
 
             file_data = io.BytesIO()
             while True:
-                chunk = data_socket.recv(8192)
-                if not chunk:
+                try:
+                    chunk = data_socket.recv(8192)
+                    if not chunk:
+                        break
+                    file_data.write(chunk)
+                except socket.timeout:
                     break
-                file_data.write(chunk)
 
             data_socket.close()
-            self._read_response()
+            self._read_response()  # Lire la réponse de fin de transfert
             file_data.seek(0)
             return file_data
         except Exception as e:
@@ -137,7 +145,8 @@ class FTPClient:
             s.settimeout(self.timeout)
             s.connect((ip, port))
             return s
-        except Exception:
+        except Exception as e:
+            logger.error(f"Erreur mode passif: {str(e)}")
             return None
 
     def _send_command(self, command):
@@ -150,17 +159,29 @@ class FTPClient:
             raise ConnectionError("Non connecté")
         response = []
         while True:
-            line = self.control_socket.recv(1024).decode(self.encoding)
-            if not line:
-                break
-            response.append(line.strip())
-            if line[3:4] == ' ':
+            try:
+                line = self.control_socket.recv(1024).decode(self.encoding)
+                if not line:
+                    break
+                response.append(line.strip())
+                if line[3:4] == ' ':
+                    break
+            except socket.timeout:
                 break
         return '\n'.join(response)
 
     def _parse_listing(self, listing_data, base_path):
         files = []
-        for line in listing_data.decode(self.encoding).splitlines():
+        try:
+            lines = listing_data.decode(self.encoding).splitlines()
+        except UnicodeDecodeError:
+            # Essayer avec un encodage alternatif si utf-8 échoue
+            try:
+                lines = listing_data.decode('latin-1').splitlines()
+            except Exception:
+                return files
+
+        for line in lines:
             if not line.strip():
                 continue
             try:
@@ -182,7 +203,8 @@ class FTPClient:
                     'size': size,
                     'permissions': perms
                 })
-            except Exception:
+            except Exception as e:
+                logger.debug(f"Erreur parsing ligne listing: {str(e)}")
                 continue
         return files
 
@@ -196,22 +218,29 @@ class FTPClient:
                     pass
                 finally:
                     self.control_socket.close()
+                    self.control_socket = None
         except Exception:
             pass
 
 # ==================== GESTION DES PARTAGES ====================
 def load_shares():
+    if not os.path.exists(SHARES_DIR):
+        os.makedirs(SHARES_DIR, exist_ok=True)
+        
     shares_file = os.path.join(SHARES_DIR, "shares.json")
     if not os.path.exists(shares_file):
         return {}
     try:
         with open(shares_file, 'r') as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        logger.error(f"Erreur chargement partages: {str(e)}")
         return {}
 
 def save_shares(shares):
     try:
+        if not os.path.exists(SHARES_DIR):
+            os.makedirs(SHARES_DIR, exist_ok=True)
         with open(os.path.join(SHARES_DIR, "shares.json"), 'w') as f:
             json.dump(shares, f)
     except Exception as e:
@@ -225,6 +254,7 @@ def clean_expired_shares():
         del shares[token]
     if expired:
         save_shares(shares)
+        logger.info(f"Nettoyage de {len(expired)} partages expirés")
 
 # ==================== ROUTES API COMPLÈTES ====================
 @app.route('/api/health', methods=['GET'])
@@ -238,6 +268,9 @@ def health_check():
 @app.route('/api/servers', methods=['GET'])
 def get_servers():
     try:
+        if not os.path.exists(CONFIG_FILE):
+            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
+            
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
@@ -266,6 +299,9 @@ def get_servers():
 @app.route('/api/browse/<int:server_id>', methods=['GET'])
 def browse_server(server_id):
     try:
+        if not os.path.exists(CONFIG_FILE):
+            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
+            
         with open(CONFIG_FILE, 'r') as f:
             config = json.load(f)
         
@@ -302,6 +338,9 @@ def download_file(server_id):
         if not path:
             return jsonify({'error': 'Chemin manquant'}), 400
 
+        if not os.path.exists(CONFIG_FILE):
+            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
+            
         with open(CONFIG_FILE, 'r') as f:
             servers = json.load(f).get('ftp_servers', [])
         
@@ -338,18 +377,22 @@ def create_share():
         if not data or 'server_id' not in data or 'path' not in data:
             return jsonify({'error': 'Données invalides'}), 400
 
+        if not os.path.exists(CONFIG_FILE):
+            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
+            
         with open(CONFIG_FILE, 'r') as f:
             servers = json.load(f).get('ftp_servers', [])
         
-        if data['server_id'] >= len(servers):
+        server_id = int(data['server_id'])
+        if server_id >= len(servers):
             return jsonify({'error': 'Serveur invalide'}), 404
 
         token = str(uuid.uuid4())
         shares = load_shares()
         shares[token] = {
-            'server_id': data['server_id'],
+            'server_id': server_id,
             'path': data['path'],
-            'expiry': time.time() + (data.get('duration', 24) * 3600),  # Parenthèse fermante ajoutée ici
+            'expiry': time.time() + (data.get('duration', 24) * 3600),
             'created': time.time()
         }
         save_shares(shares)
@@ -372,15 +415,22 @@ def download_shared(token):
 
         share = shares[token]
         if share['expiry'] < time.time():
+            # Supprimer le partage expiré
+            del shares[token]
+            save_shares(shares)
             return jsonify({'error': 'Lien expiré'}), 410
 
+        if not os.path.exists(CONFIG_FILE):
+            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
+            
         with open(CONFIG_FILE, 'r') as f:
             servers = json.load(f).get('ftp_servers', [])
         
-        if share['server_id'] >= len(servers):
+        server_id = share['server_id']
+        if server_id >= len(servers):
             return jsonify({'error': 'Serveur invalide'}), 500
 
-        server = servers[share['server_id']]
+        server = servers[server_id]
         client = FTPClient(server['host'], server.get('port', 21))
         
         if not client.connect():
@@ -406,13 +456,20 @@ def download_shared(token):
 # ==================== LANCEMENT DU SERVEUR ====================
 def cleanup_task():
     while True:
-        time.sleep(3600)
-        clean_expired_shares()
+        try:
+            clean_expired_shares()
+        except Exception as e:
+            logger.error(f"Erreur tâche nettoyage: {str(e)}")
+        time.sleep(3600)  # Nettoyage toutes les heures
 
 if __name__ == "__main__":
+    # S'assurer que les répertoires existent
     os.makedirs(SHARES_DIR, exist_ok=True)
+    
+    # Nettoyer les partages expirés au démarrage
     clean_expired_shares()
     
+    # Démarrer le thread de nettoyage
     threading.Thread(target=cleanup_task, daemon=True).start()
     
     logger.info("Démarrage du serveur FTP Browser")
