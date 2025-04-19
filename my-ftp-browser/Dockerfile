@@ -30,7 +30,7 @@ RUN chmod +x /run.sh && \
     chmod +x /usr/share/ftpbrowser/css/style.css && \
     chmod +x /usr/share/ftpbrowser/js/app.js
 # Port d'exposition pour l'interface web
-EXPOSE 8099
+EXPOSE 8145
 # S6-Overlay comme point d'entrée
 ENTRYPOINT ["/init"]
 # Labels pour la documentation
