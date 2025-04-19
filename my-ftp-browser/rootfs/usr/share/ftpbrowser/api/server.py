@@ -695,15 +695,18 @@ cleanup_thread.start()
 
 # Démarrer le serveur
 if __name__ == "__main__":
-    # S'assurer que les dossiers existent
-    if not os.path.exists(SHARES_DIR):
-        os.makedirs(SHARES_DIR)
-        
-    # Nettoyer les partages expirés au démarrage
-    clean_expired_shares()
-    
-    logger.info("Démarrage du serveur API FTP Browser")
-    run_simple('0.0.0.0', 5000, app, use_reloader=False)
+    logger.info("=== Démarrage du serveur FTP Browser ===")
+    try:
+        run_simple(
+            hostname='127.0.0.1',
+            port=5000,
+            application=app,
+            use_reloader=False,
+            threaded=True
+        )
+    except Exception as e:
+        logger.critical(f"Échec du démarrage: {str(e)}")
+        exit(1)
 
 
 
