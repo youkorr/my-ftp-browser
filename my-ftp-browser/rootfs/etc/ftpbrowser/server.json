@@ -18,7 +18,7 @@
   "ftp_servers": [
     {
       "name": "Mon Serveur FTP",
-      "host": "192.168.1.100",
+      "host": "adresse_du_serveur",
       "port": 21,
       "username": "utilisateur",
       "password": "mot_de_passe",
