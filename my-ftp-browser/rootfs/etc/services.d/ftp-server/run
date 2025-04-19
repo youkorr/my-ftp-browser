@@ -1,17 +1,2 @@
 #!/command/with-contenv bashio
-bashio::log.info "Démarrage du service API FTP Browser..."
-
-# Configuration optimisée
-export PYTHONUNBUFFERED=1
-export PYTHONPATH=/usr/share/ftpbrowser/api
-export FLASK_ENV=production
-
-# Démarrer avec gestion des erreurs
-while true; do
-    bashio::log.info "Lancement du serveur FTP..."
-    python3 -u /usr/share/ftpbrowser/api/server.py \
-        >>/proc/1/fd/1 2>>/proc/1/fd/2
-    status=$?
-    bashio::log.warning "Le serveur a quitté avec le code $status. Redémarrage dans 2s..."
-    sleep 2
-done
+python3 /usr/share/ftpbrowser/api/server.py --host 0.0.0.0 --port 5000
