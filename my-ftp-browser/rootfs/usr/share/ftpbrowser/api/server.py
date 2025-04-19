@@ -14,6 +14,9 @@ import io
 from datetime import datetime
 
 # ==================== CONFIGURATION INITIALE ====================
+# Créer le répertoire pour les logs s'il n'existe pas
+os.makedirs('/data/ftpbrowser', exist_ok=True)
+
 logging.basicConfig(
     level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -480,7 +483,6 @@ if __name__ == "__main__":
         use_reloader=False,
         threaded=True
     )
-
 
 
 
