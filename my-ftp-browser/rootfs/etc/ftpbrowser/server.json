@@ -1,31 +1,31 @@
 {
-  "server": {
-    "host": "0.0.0.0",
-    "port": 8145
-  },
-  "security": {
-    "enabled": true,
-    "token_expiration": 3600
-  },
-  "ftp": {
-    "default_timeout": 30,
-    "cache_duration": 300
-  },
-  "paths": {
-    "shares_directory": "/data/ftpbrowser/shares",
-    "temp_directory": "/tmp/ftpbrowser"
-  },
   "ftp_servers": [
     {
       "name": "Mon Serveur FTP",
-      "host": "adresse_du_serveur",
-      "port": 21,
-      "username": "utilisateur",
-      "password": "mot_de_passe",
-      "root_path": "/"
+      "host": "my adress ip",  
+      "port": 21,              
+      "username": "utilisateur", 
+      "password": "mot_de_passe", 
+      "root_path": "/",        
+      "passive": true,         
+      "timeout": 30             
     }
-  ]
+  ],
+  "share_settings": {
+    "default_duration": 24,      
+    "max_duration": 168,         
+    "show_share_link": true       
+  },
+  "allow_hosts": [
+    "192.168.1.0/24",           
+    "169.254.0.0/16",           
+    "fe80::/10",                  
+    "fc00::/7"                  
+  ],
+  "allow_uploads": true,        
+  "log_level": "info"          
 }
+
 
 
 
