@@ -1,10 +1,31 @@
 #!/command/with-contenv bashio
 bashio::log.info "Démarrage du service NGINX..."
 
-# Vérification de la configuration nginx
-nginx -t
+# Configuration des variables d'environnement
+export NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+export NGINX_ENVSUBST_TEMPLATE_DIR=/etc/nginx/templates
 
-# Démarrer nginx en mode premier plan
-exec nginx -g "daemon off;"
+# Vérification et traitement des templates
+if [ -d "$NGINX_ENVSUBST_TEMPLATE_DIR" ]; then
+    bashio::log.info "Traitement des templates Nginx..."
+    mkdir -p "$NGINX_ENVSUBST_OUTPUT_DIR" || {
+        bashio::log.error "Impossible de créer le répertoire de sortie Nginx"
+        exit 1
+    }
+    /docker-entrypoint.d/20-envsubst-on-templates.sh || {
+        bashio::log.error "Échec du traitement des templates Nginx"
+        exit 1
+    }
+fi
 
+# Vérification de la configuration Nginx
+bashio::log.info "Validation de la configuration Nginx..."
+nginx -t || {
+    bashio::log.error "Échec de la validation de la configuration Nginx"
+    exit 1
+}
+
+# Démarrer Nginx en mode premier plan
+bashio::log.info "Démarrage de Nginx..."
+exec nginx -g "daemon off; error_log /dev/stderr info;"
 
