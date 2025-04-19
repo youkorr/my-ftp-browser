@@ -1,23 +1,17 @@
 #!/command/with-contenv bashio
 bashio::log.info "Démarrage du service API FTP Browser..."
 
-# Configuration Python
+# Configuration optimisée
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=/usr/share/ftpbrowser/api
+export FLASK_ENV=production
 
-# Vérification des fichiers
-CONFIG_FILE="/etc/ftpbrowser/server.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-    bashio::log.error "Fichier de configuration manquant: $CONFIG_FILE"
-    exit 1
-fi
-
-if [ ! -f "/usr/share/ftpbrowser/api/server.py" ]; then
-    bashio::log.error "Fichier server.py introuvable!"
-    exit 1
-fi
-
-# Démarrer en mode debug
-bashio::log.info "Lancement du serveur FTP en mode debug..."
-exec python3 -u /usr/share/ftpbrowser/api/server.py \
-    >>/proc/1/fd/1 2>>/proc/1/fd/2
+# Démarrer avec gestion des erreurs
+while true; do
+    bashio::log.info "Lancement du serveur FTP..."
+    python3 -u /usr/share/ftpbrowser/api/server.py \
+        >>/proc/1/fd/1 2>>/proc/1/fd/2
+    status=$?
+    bashio::log.warning "Le serveur a quitté avec le code $status. Redémarrage dans 2s..."
+    sleep 2
+done
