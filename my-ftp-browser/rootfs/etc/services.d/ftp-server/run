@@ -1,34 +1,23 @@
 #!/command/with-contenv bashio
 bashio::log.info "Démarrage du service API FTP Browser..."
 
-# Configuration des variables d'environnement
+# Configuration Python
 export PYTHONUNBUFFERED=1
 export PYTHONPATH=/usr/share/ftpbrowser/api
 
-# Vérification des dépendances
-if ! command -v python3 >/dev/null; then
-    bashio::log.error "Python3 n'est pas installé!"
-    exit 1
-fi
-
-# Vérification des fichiers nécessaires
-CONFIG_FILE="/etc/ftpbrowser/server.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-    bashio::log.error "Fichier de configuration $CONFIG_FILE introuvable!"
-    exit 1
-fi
-
-if [ ! -f "/usr/share/ftpbrowser/api/server.py" ]; then
-    bashio::log.error "Fichier server.py introuvable!"
-    exit 1
-fi
-
-# Création des répertoires nécessaires
-mkdir -p /data/ftpbrowser/shares || {
-    bashio::log.error "Impossible de créer /data/ftpbrowser/shares"
+# Attendre que la base de données soit prête
+bashio::log.info "Vérification des dépendances..."
+timeout 30 bash -c "until python3 -c 'import socket; socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((\"127.0.0.1\", 5000))' 2>/dev/null; do sleep 1; done" || {
+    bashio::log.error "Le service API n'a pas démarré correctement"
     exit 1
 }
 
-# Démarrer le serveur Python
-exec python3 /usr/share/ftpbrowser/api/server.py \
-    >>/proc/1/fd/1 2>>/proc/1/fd/2
+# Démarrer en surveillant les crashes
+while true; do
+    bashio::log.info "Lancement du serveur FTP..."
+    python3 /usr/share/ftpbrowser/api/server.py \
+        >>/proc/1/fd/1 2>>/proc/1/fd/2
+    status=$?
+    bashio::log.warning "Le serveur a crashé avec le code $status. Redémarrage dans 5s..."
+    sleep 5
+done
