@@ -698,7 +698,7 @@ if __name__ == "__main__":
     logger.info("=== Démarrage du serveur FTP Browser ===")
     try:
         run_simple(
-            hostname='127.0.0.1',
+            hostname=0.0.0.0',
             port=5000,
             application=app,
             use_reloader=False,
