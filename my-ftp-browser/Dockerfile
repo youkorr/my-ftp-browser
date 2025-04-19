@@ -20,15 +20,10 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 COPY rootfs /
 COPY run.sh /
 # Modifier les permissions pour les scripts
-RUN chmod +x /run.sh && \
-    chmod +x /etc/services.d/nginx/run && \
-    chmod +x /etc/services.d/ftp-server/run && \
-    chmod +x /usr/share/ftpbrowser/api/server.py && \
-    chmod +x /etc/nginx/nginx.conf && \
-    chmod +x /etc/ftpbrowser/server.json && \
-    chmod +x /usr/share/ftpbrowser/index.html && \
-    chmod +x /usr/share/ftpbrowser/css/style.css && \
-    chmod +x /usr/share/ftpbrowser/js/app.js
+RUN chmod +x /run.sh \
+    && chmod +x /etc/services.d/nginx/run \
+    && chmod +x /etc/services.d/ftp-server/run \
+    && chmod +x /usr/share/ftpbrowser/api/server.py  # Ajout des droits d'exécution
 # Port d'exposition pour l'interface web
 EXPOSE 8145
 # S6-Overlay comme point d'entrée
