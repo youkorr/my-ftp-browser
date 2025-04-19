@@ -1,15 +1,34 @@
 #!/command/with-contenv bashio
 bashio::log.info "Démarrage du service API FTP Browser..."
 
-# Vérification des chemins et fichiers
-if [ ! -f /usr/share/ftpbrowser/api/server.py ]; then
+# Configuration des variables d'environnement
+export PYTHONUNBUFFERED=1
+export PYTHONPATH=/usr/share/ftpbrowser/api
+
+# Vérification des dépendances
+if ! command -v python3 >/dev/null; then
+    bashio::log.error "Python3 n'est pas installé!"
+    exit 1
+fi
+
+# Vérification des fichiers nécessaires
+CONFIG_FILE="/etc/ftpbrowser/server.json"
+if [ ! -f "$CONFIG_FILE" ]; then
+    bashio::log.error "Fichier de configuration $CONFIG_FILE introuvable!"
+    exit 1
+fi
+
+if [ ! -f "/usr/share/ftpbrowser/api/server.py" ]; then
     bashio::log.error "Fichier server.py introuvable!"
     exit 1
 fi
 
-# Aller dans le répertoire de l'API
-cd /usr/share/ftpbrowser/api
+# Création des répertoires nécessaires
+mkdir -p /data/ftpbrowser/shares || {
+    bashio::log.error "Impossible de créer /data/ftpbrowser/shares"
+    exit 1
+}
 
 # Démarrer le serveur Python
-exec python3 server.py
-
+exec python3 /usr/share/ftpbrowser/api/server.py \
+    >>/proc/1/fd/1 2>>/proc/1/fd/2
