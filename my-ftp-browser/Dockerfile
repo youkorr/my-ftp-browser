@@ -27,7 +27,12 @@ COPY run.sh /
 RUN chmod +x /run.sh \           
     && chmod +x /etc/services.d/nginx/run \  
     && chmod +x /etc/services.d/ftp-server/run \  
-    && chmod +x /usr/share/ftpbrowser/api/server.py 
+    && chmod +x /usr/share/ftpbrowser/api/server.py
+    && chmod +x /etc/nginx/nginx.conf
+    && chmod +x /etc/ftpbrowser/server.json
+    && chmod +x /usr/share/ftpbrowser/index.html
+    && chmod +x /usr/share/ftpbrowser/css/style.css
+    && chmod +x /usr/share/ftpbrowser/js/app.js
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
