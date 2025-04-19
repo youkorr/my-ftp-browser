@@ -29,7 +29,7 @@ RUN chmod a+x \
     /usr/share/ftpbrowser/api/server.py
 
 # Port d'exposition pour l'interface web
-EXPOSE 8145
+EXPOSE 5000 8145
 
 # S6-Overlay comme point d'entrée
 ENTRYPOINT ["/init"]
