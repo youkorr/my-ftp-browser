@@ -1,6 +1,5 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
-
 # Installation des dépendances système
 RUN apk add --no-cache \
     python3 \
@@ -10,7 +9,6 @@ RUN apk add --no-cache \
     nginx \
     curl \
     tzdata
-
 # Installer les dépendances Python en séparant chaque commande pour une meilleure visibilité des erreurs
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir Flask==2.0.1 && \
@@ -18,28 +16,23 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir requests==2.26.0 && \
     pip3 install --no-cache-dir PyJWT==2.1.0 && \
     pip3 install --no-cache-dir python-dateutil==2.8.2
-
 # Copie des fichiers dans l'image
 COPY rootfs /
 COPY run.sh /
-
 # Modifier les permissions pour les scripts
-RUN chmod +x /run.sh \           
-    && chmod +x /etc/services.d/nginx/run \  
-    && chmod +x /etc/services.d/ftp-server/run \  
-    && chmod +x /usr/share/ftpbrowser/api/server.py
-    && chmod +x /etc/nginx/nginx.conf
-    && chmod +x /etc/ftpbrowser/server.json
-    && chmod +x /usr/share/ftpbrowser/index.html
-    && chmod +x /usr/share/ftpbrowser/css/style.css
-    && chmod +x /usr/share/ftpbrowser/js/app.js
-
+RUN chmod +x /run.sh && \
+    chmod +x /etc/services.d/nginx/run && \
+    chmod +x /etc/services.d/ftp-server/run && \
+    chmod +x /usr/share/ftpbrowser/api/server.py && \
+    chmod +x /etc/nginx/nginx.conf && \
+    chmod +x /etc/ftpbrowser/server.json && \
+    chmod +x /usr/share/ftpbrowser/index.html && \
+    chmod +x /usr/share/ftpbrowser/css/style.css && \
+    chmod +x /usr/share/ftpbrowser/js/app.js
 # Port d'exposition pour l'interface web
 EXPOSE 8099
-
 # S6-Overlay comme point d'entrée
 ENTRYPOINT ["/init"]
-
 # Labels pour la documentation
 LABEL \
     io.hass.name="FTP Browser & Media Server" \
