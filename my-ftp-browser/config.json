@@ -55,7 +55,7 @@
     },
     "log_level": "list(trace|debug|info|warning|error)"
   },
-  "webui": "http://[HOST]:[PORT:8145]"
+  "webui": "http://[HOST]:[PORT:5000]"
 }
 
 
