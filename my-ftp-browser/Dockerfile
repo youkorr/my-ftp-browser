@@ -1,5 +1,4 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
-
 FROM ${BUILD_FROM}
 
 # Installation des dépendances système
@@ -24,9 +23,11 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 COPY rootfs /
 COPY run.sh /
 
-# Rendre les scripts exécutables
-RUN chmod a+x /run.sh && \
-    find /etc/services.d -type f -name run -exec chmod a+x {} \;
+# Modifier les permissions pour les scripts
+RUN chmod +x /run.sh \           
+    && chmod +x /etc/services.d/nginx/run \  
+    && chmod +x /etc/services.d/ftp-server/run \  
+    && chmod +x /usr/share/ftpbrowser/api/server.py 
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
