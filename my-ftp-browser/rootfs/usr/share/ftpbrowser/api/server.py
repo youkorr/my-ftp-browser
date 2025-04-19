@@ -349,7 +349,7 @@ def create_share():
         shares[token] = {
             'server_id': data['server_id'],
             'path': data['path'],
-            'expiry': time.time() + (data.get('duration', 24) * 3600,
+            'expiry': time.time() + (data.get('duration', 24) * 3600),  # Parenthèse fermante ajoutée ici
             'created': time.time()
         }
         save_shares(shares)
@@ -361,6 +361,7 @@ def create_share():
     except Exception as e:
         logger.error(f"Erreur create_share: {str(e)}")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/download/<token>', methods=['GET'])
 def download_shared(token):
