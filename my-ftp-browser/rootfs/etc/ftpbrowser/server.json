@@ -2,29 +2,15 @@
   "ftp_servers": [
     {
       "name": "Mon Serveur FTP",
-      "host": "my adress ip",  
-      "port": 21,              
-      "username": "utilisateur", 
-      "password": "mot_de_passe", 
-      "root_path": "/",        
-      "passive": true,         
-      "timeout": 30             
+      "host": "ftp.example.com",
+      "port": 21,
+      "username": "mon_utilisateur",
+      "password": "mon_mot_de_passe",
+      "root_path": "/chemin/racine"
     }
-  ],
-  "share_settings": {
-    "default_duration": 24,      
-    "max_duration": 168,         
-    "show_share_link": true       
-  },
-  "allow_hosts": [
-    "192.168.1.0/24",           
-    "169.254.0.0/16",           
-    "fe80::/10",                  
-    "fc00::/7"                  
-  ],
-  "allow_uploads": true,        
-  "log_level": "info"          
+  ]
 }
+
 
 
 
