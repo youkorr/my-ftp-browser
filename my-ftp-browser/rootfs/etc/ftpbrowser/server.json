@@ -1,11 +1,27 @@
 {
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8099
+  },
+  "security": {
+    "enabled": true,
+    "token_expiration": 3600
+  },
+  "ftp": {
+    "default_timeout": 30,
+    "cache_duration": 300
+  },
+  "paths": {
+    "shares_directory": "/data/ftpbrowser/shares",
+    "temp_directory": "/tmp/ftpbrowser"
+  },
   "ftp_servers": [
     {
-      "name": "Nom de votre serveur",
-      "host": "adresse_du_serveur",
+      "name": "Mon Serveur FTP",
+      "host": "192.168.1.100",
       "port": 21,
-      "username": "votre_nom_utilisateur",
-      "password": "votre_mot_de_passe",
+      "username": "utilisateur",
+      "password": "mot_de_passe",
       "root_path": "/"
     }
   ]
