@@ -9,7 +9,7 @@
   "boot": "auto",
   "init": false,
   "ingress": true,
-  "ingress_port": 8099,
+  "ingress_port": 8145,
   "panel_icon": "mdi:file-multiple",
   "homeassistant_api": true,
   "hassio_api": true,
