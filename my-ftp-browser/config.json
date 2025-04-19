@@ -14,8 +14,8 @@
   "homeassistant_api": true,
   "hassio_api": true,
   "hassio_role": "default",
-  "host_network": true,
-  "privileged": ["NET_ADMIN"],
+  "host_network": false,
+  "privileged": [],
   "devices": [],
   "options": {
     "ftp_servers": [
@@ -25,14 +25,16 @@
         "port": 21,
         "username": "user",
         "password": "pass",
-        "root_path": "/sdcard",
-        "use_ssl": false
+        "root_path": "",
+        "use_ssl": false,
+        "passive_mode": true
       }
     ],
     "share_settings": {
       "default_duration": 24,
       "max_duration": 168,
-      "show_share_link": true
+      "show_share_link": true,
+      "require_password": false
     },
     "log_level": "info"
   },
@@ -45,17 +47,19 @@
         "username": "str",
         "password": "password",
         "root_path": "str?",
-        "use_ssl": "bool"
+        "use_ssl": "bool",
+        "passive_mode": "bool?"
       }
     ],
     "share_settings": {
       "default_duration": "int(1,720)",
       "max_duration": "int(1,720)",
-      "show_share_link": "bool"
+      "show_share_link": "bool",
+      "require_password": "bool?"
     },
-    "log_level": "list(trace|debug|info|warning|error)"
+    "log_level": "list(trace|debug|info|warning|error|fatal)"
   },
-  "webui": "http://[HOST]:[PORT:5000]"
+  "webui": "http://[HOST]:[PORT:8145]"
 }
 
 
