@@ -1,23 +1,21 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.18
 FROM ${BUILD_FROM}
 
-# Mettre à jour l'index des paquets
-RUN apk update
+# Mise à jour agressive et ajout d'un miroir alternatif
+RUN echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/main" > /etc/apk/repositories && \
+    echo "https://dl-cdn.alpinelinux.org/alpine/v3.18/community" >> /etc/apk/repositories && \
+    apk update --no-cache && \
+    apk upgrade --no-cache
 
-# Installer les dépendances une par une pour mieux identifier d'éventuels problèmes
-RUN apk add --no-cache python3
-RUN apk add --no-cache py3-pip
-RUN apk add --no-cache python3-dev
-RUN apk add --no-cache build-base
-# Essayer d'installer vsftpd ou utiliser pyftpdlib comme alternative
-# Si vsftpd ne fonctionne pas, vous pouvez commenter cette ligne
-# puisque vous utilisez déjà pyftpdlib
-RUN apk add --no-cache vsftpd || echo "Utilisation de pyftpdlib comme alternative"
+# Installation des paquets essentiels uniquement
+RUN apk add --no-cache python3 py3-pip
 
 # Copier les fichiers
 COPY rootfs /
 
 # Installer les dépendances Python
+# Notez que nous n'installons plus python3-dev et build-base
+# Flask et pyftpdlib sont des packages Python purs qui n'ont généralement pas besoin de compilation
 RUN pip3 install --no-cache-dir flask pyftpdlib
 
 # Créer le répertoire pour l'application
