@@ -1,0 +1,56 @@
+#include <tunables/global>
+
+profile 753ab8a8_my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/python>
+
+  # Réseau
+  network inet tcp,
+  network inet udp,
+
+  # Permissions pour les binaires
+  /bin/** ix,
+  /usr/bin/** ix,
+  /sbin/** ix,
+  /usr/sbin/** ix,
+
+  # Python et bibliothèques
+  /usr/local/bin/** ix,
+  /usr/local/lib/** r,
+  /usr/local/lib64/** r,
+  /lib/** r,
+  /usr/lib/** r,
+  /lib64/** r,
+  /usr/lib64/** r,
+
+  # Fichiers temporaires
+  /tmp/** rwk,
+  /var/tmp/** rwk,
+  /run/** rw,
+  /var/run/** rw,
+
+  # Fichiers de l'addon
+  /data/** rw,
+  /share/** rw,
+  /ssl/** r,
+  /media/** rw,
+
+  # Application spécifique
+  /usr/share/ftpbrowser/** rw,
+  /etc/services.d/** rwix,
+
+  # Script principal
+  /run.sh rwx,
+  /usr/bin/bashio ix,
+  /usr/lib/bashio/** r,
+
+  # Journaux
+  /dev/stdout rw,
+  /dev/stderr rw,
+  /dev/stdin r,
+
+  # Capacités système
+  capability net_bind_service,
+  capability dac_override,
+}
