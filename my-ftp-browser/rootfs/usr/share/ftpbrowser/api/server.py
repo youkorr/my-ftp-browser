@@ -1,489 +1,393 @@
 #!/usr/bin/env python3
-"""API FTP Browser pour Home Assistant - Version Finale Complète"""
 import os
 import json
-import time
-import socket
-import uuid
-import re
-import logging
-from flask import Flask, request, jsonify, send_file
-from werkzeug.serving import run_simple
-import threading
-import io
-from datetime import datetime
+import ftplib
+import ssl
+from flask import Flask, request, jsonify, send_from_directory
 
-# ==================== CONFIGURATION INITIALE ====================
-# Créer le répertoire pour les logs s'il n'existe pas
-os.makedirs('/data/ftpbrowser', exist_ok=True)
+# Créer l'application Flask
+app = Flask(__name__, static_folder='../js')
 
-logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('/data/ftpbrowser/server.log')
-    ]
-)
-logger = logging.getLogger("ftp-browser")
+# Récupérer les informations de configuration depuis les variables d'environnement
+FTP_USER = os.environ.get('FTP_USER', '')
+FTP_PASS = os.environ.get('FTP_PASS', '')
+FTP_PORT = int(os.environ.get('FTP_PORT', 21))
+SSL_ENABLED = os.environ.get('SSL', 'false').lower() == 'true'
+PASSIVE_MODE = os.environ.get('PASSIVE_MODE', 'true').lower() == 'true'
+ALLOW_UPLOAD = os.environ.get('ALLOW_UPLOAD', 'true').lower() == 'true'
+ALLOW_DELETE = os.environ.get('ALLOW_DELETE', 'true').lower() == 'true'
 
-app = Flask(__name__)
+# Servir les fichiers statiques de l'application
+@app.route('/')
+def index():
+    return send_from_directory('../', 'index.html')
 
-CONFIG_FILE = "/etc/ftpbrowser/server.json"
-SHARES_DIR = "/data/ftpbrowser/shares"
+@app.route('/<path:path>')
+def static_files(path):
+    return send_from_directory('../', path)
 
-# ==================== CLIENT FTP COMPLET ====================
-class FTPClient:
-    def __init__(self, host, port=21, timeout=30):
-        self.host = host
-        self.port = port
-        self.timeout = timeout
-        self.control_socket = None
-        self.encoding = 'utf-8'
-
-    def connect(self):
-        try:
-            self.control_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.control_socket.settimeout(self.timeout)
-            self.control_socket.connect((self.host, self.port))
-            response = self._read_response()
-            return response.startswith('220')
-        except Exception as e:
-            logger.error(f"Erreur connexion: {str(e)}")
-            return False
-
-    def login(self, username, password):
-        try:
-            self._send_command(f"USER {username}")
-            response = self._read_response()
-            
-            if response.startswith('230'):
-                return True
-            elif response.startswith('331'):
-                self._send_command(f"PASS {password}")
-                return self._read_response().startswith('230')
-            return False
-        except Exception as e:
-            logger.error(f"Erreur login: {str(e)}")
-            return False
-
-    def list_directory(self, path='/'):
-        try:
-            if path != '/':
-                self._send_command(f"CWD {path}")
-                if not self._read_response().startswith('250'):
-                    return []
-
-            data_socket = self._enter_passive_mode()
-            if not data_socket:
-                return []
-
-            self._send_command("LIST -la")
-            response = self._read_response()
-            if not response.startswith('150') and not response.startswith('125'):
-                data_socket.close()
-                return []
-
-            listing_data = b''
-            while True:
-                try:
-                    chunk = data_socket.recv(4096)
-                    if not chunk:
-                        break
-                    listing_data += chunk
-                except socket.timeout:
-                    break
-
-            data_socket.close()
-            self._read_response()  # Lire la réponse de fin de transfert
-            return self._parse_listing(listing_data, path)
-        except Exception as e:
-            logger.error(f"Erreur list_directory: {str(e)}")
-            return []
-
-    def download_file(self, path):
-        try:
-            data_socket = self._enter_passive_mode()
-            if not data_socket:
-                raise Exception("Mode passif échoué")
-
-            self._send_command(f"RETR {path}")
-            response = self._read_response()
-            if not response.startswith('150') and not response.startswith('125'):
-                data_socket.close()
-                raise Exception("Erreur RETR")
-
-            file_data = io.BytesIO()
-            while True:
-                try:
-                    chunk = data_socket.recv(8192)
-                    if not chunk:
-                        break
-                    file_data.write(chunk)
-                except socket.timeout:
-                    break
-
-            data_socket.close()
-            self._read_response()  # Lire la réponse de fin de transfert
-            file_data.seek(0)
-            return file_data
-        except Exception as e:
-            logger.error(f"Erreur download: {str(e)}")
-            raise
-
-    def _enter_passive_mode(self):
-        try:
-            self._send_command("PASV")
-            response = self._read_response()
-            if not response.startswith('227'):
-                return None
-
-            match = re.search(r'(\d+),(\d+),(\d+),(\d+),(\d+),(\d+)', response)
-            if not match:
-                return None
-
-            ip = '.'.join(match.groups()[:4])
-            port = (int(match.groups()[4]) << 8) + int(match.groups()[5])
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(self.timeout)
-            s.connect((ip, port))
-            return s
-        except Exception as e:
-            logger.error(f"Erreur mode passif: {str(e)}")
-            return None
-
-    def _send_command(self, command):
-        if not self.control_socket:
-            raise ConnectionError("Non connecté")
-        self.control_socket.sendall((command + '\r\n').encode(self.encoding))
-
-    def _read_response(self):
-        if not self.control_socket:
-            raise ConnectionError("Non connecté")
-        response = []
-        while True:
-            try:
-                line = self.control_socket.recv(1024).decode(self.encoding)
-                if not line:
-                    break
-                response.append(line.strip())
-                if line[3:4] == ' ':
-                    break
-            except socket.timeout:
-                break
-        return '\n'.join(response)
-
-    def _parse_listing(self, listing_data, base_path):
+# Endpoint pour lister les fichiers
+@app.route('/api/list', methods=['POST'])
+def list_files():
+    data = request.json
+    path = data.get('path', '/')
+    
+    try:
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+        
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
+        
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Lister les fichiers
         files = []
-        try:
-            lines = listing_data.decode(self.encoding).splitlines()
-        except UnicodeDecodeError:
-            # Essayer avec un encodage alternatif si utf-8 échoue
-            try:
-                lines = listing_data.decode('latin-1').splitlines()
-            except Exception:
-                return files
-
-        for line in lines:
-            if not line.strip():
-                continue
-            try:
-                parts = re.split(r'\s+', line.strip(), 8)
-                if len(parts) < 9:
-                    continue
-
-                perms = parts[0]
-                size = int(parts[4]) if parts[4].isdigit() else 0
-                name = parts[8]
+        directories = []
+        
+        def process_line(line):
+            parts = line.split()
+            if len(parts) >= 9:
+                name = ' '.join(parts[8:])
+                size = parts[4]
+                date = ' '.join(parts[5:8])
+                is_dir = parts[0].startswith('d')
                 
-                if name in ('.', '..'):
-                    continue
-
-                files.append({
-                    'name': name,
-                    'path': os.path.join(base_path, name).replace('//', '/'),
-                    'type': 'directory' if perms.startswith('d') else 'file',
-                    'size': size,
-                    'permissions': perms
-                })
-            except Exception as e:
-                logger.debug(f"Erreur parsing ligne listing: {str(e)}")
-                continue
-        return files
-
-    def close(self):
-        try:
-            if self.control_socket:
-                try:
-                    self._send_command("QUIT")
-                    self._read_response()
-                except Exception:
-                    pass
-                finally:
-                    self.control_socket.close()
-                    self.control_socket = None
-        except Exception:
-            pass
-
-# ==================== GESTION DES PARTAGES ====================
-def load_shares():
-    if not os.path.exists(SHARES_DIR):
-        os.makedirs(SHARES_DIR, exist_ok=True)
+                if is_dir:
+                    directories.append({
+                        'name': name,
+                        'isDirectory': True,
+                        'size': size,
+                        'date': date
+                    })
+                else:
+                    files.append({
+                        'name': name,
+                        'isDirectory': False,
+                        'size': size,
+                        'date': date
+                    })
         
-    shares_file = os.path.join(SHARES_DIR, "shares.json")
-    if not os.path.exists(shares_file):
-        return {}
-    try:
-        with open(shares_file, 'r') as f:
-            return json.load(f)
-    except Exception as e:
-        logger.error(f"Erreur chargement partages: {str(e)}")
-        return {}
-
-def save_shares(shares):
-    try:
-        if not os.path.exists(SHARES_DIR):
-            os.makedirs(SHARES_DIR, exist_ok=True)
-        with open(os.path.join(SHARES_DIR, "shares.json"), 'w') as f:
-            json.dump(shares, f)
-    except Exception as e:
-        logger.error(f"Erreur sauvegarde partages: {str(e)}")
-
-def clean_expired_shares():
-    shares = load_shares()
-    now = time.time()
-    expired = [k for k, v in shares.items() if v.get('expiry', 0) < now]
-    for token in expired:
-        del shares[token]
-    if expired:
-        save_shares(shares)
-        logger.info(f"Nettoyage de {len(expired)} partages expirés")
-
-# ==================== ROUTES API COMPLÈTES ====================
-@app.route('/api/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        "status": "ok",
-        "timestamp": datetime.utcnow().isoformat(),
-        "shares_count": len(load_shares())
-    })
-
-@app.route('/api/servers', methods=['GET'])
-def get_servers():
-    try:
-        if not os.path.exists(CONFIG_FILE):
-            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
-            
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
+        ftp.retrlines('LIST', process_line)
+        ftp.quit()
         
-        servers = []
-        for i, server in enumerate(config.get('ftp_servers', [])):
-            client = FTPClient(server['host'], server.get('port', 21))
-            is_online = client.connect() and client.login(
-                server.get('username', ''), 
-                server.get('password', '')
-            )
-            client.close()
-
-            servers.append({
-                'id': i,
-                'name': server['name'],
-                'host': server['host'],
-                'port': server.get('port', 21),
-                'online': is_online
-            })
-            
-        return jsonify({'servers': servers})
-    except Exception as e:
-        logger.error(f"Erreur get_servers: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/browse/<int:server_id>', methods=['GET'])
-def browse_server(server_id):
-    try:
-        if not os.path.exists(CONFIG_FILE):
-            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
-            
-        with open(CONFIG_FILE, 'r') as f:
-            config = json.load(f)
-        
-        servers = config.get('ftp_servers', [])
-        if server_id >= len(servers):
-            return jsonify({'error': 'Serveur non trouvé'}), 404
-        
-        server = servers[server_id]
-        path = request.args.get('path', '/')
-        
-        client = FTPClient(server['host'], server.get('port', 21))
-        if not client.connect():
-            return jsonify({'error': 'Connexion échouée'}), 502
-            
-        if not client.login(server.get('username', ''), server.get('password', '')):
-            client.close()
-            return jsonify({'error': 'Authentification échouée'}), 401
-
-        files = client.list_directory(path)
-        client.close()
+        # Trier les répertoires puis les fichiers par nom
+        directories.sort(key=lambda x: x['name'])
+        files.sort(key=lambda x: x['name'])
         
         return jsonify({
+            'success': True,
             'path': path,
-            'files': files
+            'items': directories + files
         })
+    
     except Exception as e:
-        logger.error(f"Erreur browse: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/download/<int:server_id>', methods=['GET'])
-def download_file(server_id):
-    try:
-        path = request.args.get('path', '')
-        if not path:
-            return jsonify({'error': 'Chemin manquant'}), 400
-
-        if not os.path.exists(CONFIG_FILE):
-            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
-            
-        with open(CONFIG_FILE, 'r') as f:
-            servers = json.load(f).get('ftp_servers', [])
-        
-        if server_id >= len(servers):
-            return jsonify({'error': 'Serveur non trouvé'}), 404
-
-        server = servers[server_id]
-        client = FTPClient(server['host'], server.get('port', 21))
-        
-        if not client.connect():
-            return jsonify({'error': 'Connexion impossible'}), 502
-            
-        if not client.login(server.get('username', ''), server.get('password', '')):
-            client.close()
-            return jsonify({'error': 'Authentification échouée'}), 401
-
-        file_data = client.download_file(path)
-        client.close()
-        return send_file(
-            file_data,
-            as_attachment=True,
-            download_name=os.path.basename(path)
-        )
-    except Exception as e:
-        if 'client' in locals():
-            client.close()
-        logger.error(f"Erreur download: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/share', methods=['POST'])
-def create_share():
-    try:
-        data = request.json
-        if not data or 'server_id' not in data or 'path' not in data:
-            return jsonify({'error': 'Données invalides'}), 400
-
-        if not os.path.exists(CONFIG_FILE):
-            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
-            
-        with open(CONFIG_FILE, 'r') as f:
-            servers = json.load(f).get('ftp_servers', [])
-        
-        server_id = int(data['server_id'])
-        if server_id >= len(servers):
-            return jsonify({'error': 'Serveur invalide'}), 404
-
-        token = str(uuid.uuid4())
-        shares = load_shares()
-        shares[token] = {
-            'server_id': server_id,
-            'path': data['path'],
-            'expiry': time.time() + (data.get('duration', 24) * 3600),
-            'created': time.time()
-        }
-        save_shares(shares)
-
         return jsonify({
-            'token': token,
-            'url': f"/api/download/{token}"
-        })
-    except Exception as e:
-        logger.error(f"Erreur create_share: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+            'success': False,
+            'error': str(e)
+        }), 500
 
-
-@app.route('/api/download/<token>', methods=['GET'])
-def download_shared(token):
+# Endpoint pour télécharger un fichier
+@app.route('/api/download', methods=['POST'])
+def download_file():
+    data = request.json
+    path = data.get('path', '')
+    filename = data.get('filename', '')
+    
+    if not path or not filename:
+        return jsonify({
+            'success': False,
+            'error': 'Chemin ou nom de fichier manquant'
+        }), 400
+    
     try:
-        shares = load_shares()
-        if token not in shares:
-            return jsonify({'error': 'Lien invalide'}), 404
-
-        share = shares[token]
-        if share['expiry'] < time.time():
-            # Supprimer le partage expiré
-            del shares[token]
-            save_shares(shares)
-            return jsonify({'error': 'Lien expiré'}), 410
-
-        if not os.path.exists(CONFIG_FILE):
-            return jsonify({'error': 'Fichier de configuration non trouvé'}), 404
-            
-        with open(CONFIG_FILE, 'r') as f:
-            servers = json.load(f).get('ftp_servers', [])
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
         
-        server_id = share['server_id']
-        if server_id >= len(servers):
-            return jsonify({'error': 'Serveur invalide'}), 500
-
-        server = servers[server_id]
-        client = FTPClient(server['host'], server.get('port', 21))
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
         
-        if not client.connect():
-            return jsonify({'error': 'Connexion impossible'}), 502
-            
-        if not client.login(server.get('username', ''), server.get('password', '')):
-            client.close()
-            return jsonify({'error': 'Authentification échouée'}), 401
-
-        file_data = client.download_file(share['path'])
-        client.close()
-        return send_file(
-            file_data,
-            as_attachment=True,
-            download_name=os.path.basename(share['path'])
-        )
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Créer le répertoire temporaire si nécessaire
+        temp_dir = '/tmp/ftp-downloads'
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # Télécharger le fichier
+        local_file = os.path.join(temp_dir, filename)
+        with open(local_file, 'wb') as f:
+            ftp.retrbinary(f'RETR {filename}', f.write)
+        
+        ftp.quit()
+        
+        # Renvoyer le fichier
+        return send_from_directory(temp_dir, filename, as_attachment=True)
+    
     except Exception as e:
-        if 'client' in locals():
-            client.close()
-        logger.error(f"Erreur download_shared: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-# ==================== LANCEMENT DU SERVEUR ====================
-def cleanup_task():
-    while True:
-        try:
-            clean_expired_shares()
-        except Exception as e:
-            logger.error(f"Erreur tâche nettoyage: {str(e)}")
-        time.sleep(3600)  # Nettoyage toutes les heures
+# Endpoint pour uploader un fichier
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    if not ALLOW_UPLOAD:
+        return jsonify({
+            'success': False,
+            'error': 'Upload non autorisé'
+        }), 403
+    
+    if 'file' not in request.files:
+        return jsonify({
+            'success': False,
+            'error': 'Aucun fichier trouvé'
+        }), 400
+    
+    path = request.form.get('path', '/')
+    file = request.files['file']
+    
+    if file.filename == '':
+        return jsonify({
+            'success': False,
+            'error': 'Nom de fichier vide'
+        }), 400
+    
+    try:
+        # Sauvegarder temporairement le fichier
+        temp_dir = '/tmp/ftp-uploads'
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file = os.path.join(temp_dir, file.filename)
+        file.save(temp_file)
+        
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+        
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
+        
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Uploader le fichier
+        with open(temp_file, 'rb') as f:
+            ftp.storbinary(f'STOR {file.filename}', f)
+        
+        ftp.quit()
+        
+        # Supprimer le fichier temporaire
+        os.remove(temp_file)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Fichier {file.filename} uploadé avec succès'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
-if __name__ == "__main__":
-    # S'assurer que les répertoires existent
-    os.makedirs(SHARES_DIR, exist_ok=True)
+# Endpoint pour supprimer un fichier ou un répertoire
+@app.route('/api/delete', methods=['POST'])
+def delete_item():
+    if not ALLOW_DELETE:
+        return jsonify({
+            'success': False,
+            'error': 'Suppression non autorisée'
+        }), 403
     
-    # Nettoyer les partages expirés au démarrage
-    clean_expired_shares()
+    data = request.json
+    path = data.get('path', '/')
+    name = data.get('name', '')
+    is_directory = data.get('isDirectory', False)
     
-    # Démarrer le thread de nettoyage
-    threading.Thread(target=cleanup_task, daemon=True).start()
+    if not name:
+        return jsonify({
+            'success': False,
+            'error': 'Nom manquant'
+        }), 400
     
-    logger.info("Démarrage du serveur FTP Browser")
-    run_simple(
-        hostname='0.0.0.0',
-        port=5000,
-        application=app,
-        use_reloader=False,
-        threaded=True
-    )
+    try:
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+        
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
+        
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Supprimer le fichier ou le répertoire
+        if is_directory:
+            ftp.rmd(name)
+        else:
+            ftp.delete(name)
+        
+        ftp.quit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'{"Répertoire" if is_directory else "Fichier"} {name} supprimé avec succès'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
 
+# Endpoint pour créer un répertoire
+@app.route('/api/mkdir', methods=['POST'])
+def create_directory():
+    if not ALLOW_UPLOAD:
+        return jsonify({
+            'success': False,
+            'error': 'Création de répertoire non autorisée'
+        }), 403
+    
+    data = request.json
+    path = data.get('path', '/')
+    name = data.get('name', '')
+    
+    if not name:
+        return jsonify({
+            'success': False,
+            'error': 'Nom manquant'
+        }), 400
+    
+    try:
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+        
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
+        
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Créer le répertoire
+        ftp.mkd(name)
+        
+        ftp.quit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Répertoire {name} créé avec succès'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Endpoint pour renommer un fichier ou un répertoire
+@app.route('/api/rename', methods=['POST'])
+def rename_item():
+    if not ALLOW_UPLOAD:
+        return jsonify({
+            'success': False,
+            'error': 'Renommage non autorisé'
+        }), 403
+    
+    data = request.json
+    path = data.get('path', '/')
+    old_name = data.get('oldName', '')
+    new_name = data.get('newName', '')
+    
+    if not old_name or not new_name:
+        return jsonify({
+            'success': False,
+            'error': 'Nom ancien ou nouveau manquant'
+        }), 400
+    
+    try:
+        # Créer une connexion FTP
+        if SSL_ENABLED:
+            ftp = ftplib.FTP_TLS()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+            ftp.prot_p()
+        else:
+            ftp = ftplib.FTP()
+            ftp.connect('localhost', FTP_PORT)
+            ftp.login(FTP_USER, FTP_PASS)
+        
+        # Configurer le mode passif si nécessaire
+        if PASSIVE_MODE:
+            ftp.set_pasv(True)
+        
+        # Changer de répertoire
+        ftp.cwd(path)
+        
+        # Renommer le fichier ou le répertoire
+        ftp.rename(old_name, new_name)
+        
+        ftp.quit()
+        
+        return jsonify({
+            'success': True,
+            'message': f'Élément renommé de {old_name} à {new_name} avec succès'
+        })
+    
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+# Lancer l'application
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8099)
 
 
 
