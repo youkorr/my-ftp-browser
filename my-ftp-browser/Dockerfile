@@ -6,14 +6,10 @@ RUN apk update && \
     apk add --no-cache \
     python3 \
     py3-pip \
-    python3-dev \
-    build-base \
 
 # Copier les fichiers
 COPY rootfs /
 
-# Installer les dépendances Python
-RUN pip3 install --no-cache-dir flask pyftpdlib
 
 # Créer le répertoire pour l'application
 RUN mkdir -p /usr/share/ftpbrowser
