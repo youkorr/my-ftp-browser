@@ -7,10 +7,6 @@ RUN apk update && \
     python3 \
     py3-pip \
 
-# Copier les fichiers
-COPY rootfs /
-
-
 # Créer le répertoire pour l'application
 RUN mkdir -p /usr/share/ftpbrowser
 
