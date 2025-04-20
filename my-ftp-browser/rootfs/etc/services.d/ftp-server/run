@@ -1,52 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/with-contenv bash
+set -e
 
-# Obtenir la configuration
-CONFIG_PATH=/data/options.json
-FTP_USER=$(bashio::config 'username')
-FTP_PASS=$(bashio::config 'password')
-FTP_PORT=$(bashio::config 'port')
-SSL=$(bashio::config 'ssl')
-PASSIVE_MODE=$(bashio::config 'passive')
-ALLOW_UPLOAD=$(bashio::config 'allow_upload')
-ALLOW_DELETE=$(bashio::config 'allow_delete')
-
-# Configurer vsftpd
-cat > /etc/vsftpd/vsftpd.conf << EOL
-# Paramètres du serveur
-listen=YES
-anonymous_enable=NO
-local_enable=YES
-write_enable=${ALLOW_UPLOAD}
-local_umask=022
-dirmessage_enable=YES
-use_localtime=YES
-xferlog_enable=YES
-connect_from_port_20=YES
-xferlog_file=/var/log/vsftpd.log
-xferlog_std_format=YES
-secure_chroot_dir=/var/run/vsftpd/empty
-pam_service_name=vsftpd
-rsa_cert_file=/ssl/ssl.pem
-rsa_private_key_file=/ssl/ssl.key
-
-# Configuration du mode passif si activé
-pasv_enable=${PASSIVE_MODE}
-pasv_min_port=21100
-pasv_max_port=21110
-
-# Activer SSL si configuré
-ssl_enable=${SSL}
-EOL
-
-# Créer l'utilisateur FTP si nécessaire
-if ! id -u ${FTP_USER} > /dev/null 2>&1; then
-    adduser -D -h /share ${FTP_USER}
-    echo "${FTP_USER}:${FTP_PASS}" | chpasswd
-fi
-
-# Donner les permissions
-chown -R ${FTP_USER}:${FTP_USER} /share
-
-# Démarrer le serveur FTP
-bashio::log.info "Démarrage du serveur FTP sur le port ${FTP_PORT}..."
-exec vsftpd /etc/vsftpd/vsftpd.conf
+bashio::log.info "Démarrage du serveur API FTP Browser..."
+cd /usr/share/ftpbrowser/api
+exec python3 server.py
