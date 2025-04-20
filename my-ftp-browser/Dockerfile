@@ -1,5 +1,4 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
-
 FROM ${BUILD_FROM}
 
 # Installation des dépendances
@@ -22,18 +21,15 @@ COPY rootfs /
 COPY run.sh /
 
 # Rendre les scripts exécutables
-#RUN chmod a+x /run.sh
-CMD ["/run.sh"]
 RUN chmod +x /run.sh
-
-# Configuration de S6 Overlay pour les services
 RUN chmod a+x /etc/services.d/*/run
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
 
-# Commande de démarrage
-ENTRYPOINT ["/run.sh"]
+# Commande de démarrage (utiliser soit CMD soit ENTRYPOINT, pas les deux)
+ENTRYPOINT ["/usr/bin/tini", "-s", "--"]
+CMD ["/run.sh"]
 
 # Labels pour la documentation
 LABEL \
