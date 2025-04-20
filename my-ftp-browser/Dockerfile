@@ -22,7 +22,7 @@ COPY rootfs /
 COPY run.sh /
 
 # Rendre les scripts exécutables
-RUN chmod a+x /run.sh
+//RUN chmod a+x /run.sh
 CMD ["/run.sh"]
 
 # Configuration de S6 Overlay pour les services
