@@ -11,8 +11,8 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
 
   # Permissions pour les fichiers système
   /bin/** ix,
-  /usr/bin/** mrix,
-  /usr/bin/with-contenv mrix,
+  /usr/bin/** rix,
+  /usr/bin/with-contenv rix,
   /sbin/** ix,
   /usr/sbin/** ix,
   
