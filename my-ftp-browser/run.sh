@@ -39,7 +39,7 @@ cd /usr/share/ftpbrowser/api
 python3 server.py &
 # Démarrer S6 Overlay
 exec /usr/bin/s6-svscan /etc/services.d
-
+exec python3 server.py
 # Attendre que les services soient prêts
 sleep 2
 
