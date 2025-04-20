@@ -1,0 +1,5 @@
+#!/usr/bin/with-contenv bash
+set -e
+
+bashio::log.info "Démarrage du serveur web NGINX..."
+exec nginx -g "daemon off;"
