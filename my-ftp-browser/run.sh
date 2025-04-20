@@ -32,7 +32,7 @@ bashio::log.info "Mode passif: $PASSIVE_MODE"
 bashio::log.info "Upload autorisé: $ALLOW_UPLOAD"
 bashio::log.info "Suppression autorisée: $ALLOW_DELETE"
 
-SERVER_CONFIG=/etc/ftpbrowser/server.json
+
 # Démarrer le serveur API Python
 bashio::log.info "Démarrage de l'API serveur..."
 cd /usr/share/ftpbrowser/api
