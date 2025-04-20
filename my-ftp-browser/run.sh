@@ -19,6 +19,11 @@ export PASSIVE_MODE=$PASSIVE_MODE
 export ALLOW_UPLOAD=$ALLOW_UPLOAD
 export ALLOW_DELETE=$ALLOW_DELETE
 
+# Créer les répertoires nécessaires
+mkdir -p /data/ftp-browser
+mkdir -p /data/ftp-browser/shares
+mkdir -p /data/ftp-browser/temp
+
 # Afficher les informations de démarrage
 bashio::log.info "Démarrage du serveur FTP..."
 bashio::log.info "Port FTP: $FTP_PORT"
