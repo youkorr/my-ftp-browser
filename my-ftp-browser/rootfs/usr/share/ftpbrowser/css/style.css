@@ -1,116 +1,113 @@
+/* Variables */
+:root {
+    --primary-color: #03a9f4;
+    --secondary-color: #2196f3;
+    --text-color: #212121;
+    --light-color: #f5f5f5;
+    --border-color: #e0e0e0;
+    --hover-color: #f0f0f0;
+    --danger-color: #f44336;
+    --success-color: #4caf50;
+    --warning-color: #ff9800;
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base */
 body {
-    background-color: #f5f5f5;
+    font-family: var(--font-family);
+    color: var(--text-color);
+    background-color: var(--light-color);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Header */
+header {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+header h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: var(--primary-color);
+}
+
+.breadcrumb {
+    background-color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 14px;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
+.btn:hover {
+    background-color: var(--secondary-color);
+}
+
+.btn-secondary {
+    background-color: #9e9e9e;
+}
+
+.btn-secondary:hover {
+    background-color: #757575;
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+}
+
+.btn-danger:hover {
+    background-color: #d32f2f;
+}
+
+/* File List */
+.file-list {
+    background-color: white;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
 }
 
 .file-item {
     display: flex;
     align-items: center;
-    padding: 8px;
-    border-bottom: 1px solid #eee;
-    cursor: pointer;
-}
-
-.file-item:hover {
-    background-color: #f8f9fa;
-}
-
-.file-item .bi {
-    font-size: 1.5rem;
-    margin-right: 10px;
-}
-
-.file-item .bi-folder-fill {
-    color: #ffc107;
-}
-
-.file-item .bi-file-earmark {
-    color: #6c757d;
-}
-
-.file-item .bi-file-earmark-music {
-    color: #28a745;
-}
-
-.file-item .bi-file-earmark-image {
-    color: #17a2b8;
-}
-
-.file-item .bi-file-earmark-play {
-    color: #dc3545;
-}
-
-.file-item .bi-file-earmark-text {
-    color: #007bff;
-}
-
-.file-item .bi-file-earmark-pdf {
-    color: #fd7e14;
-}
-
-.file-name {
-    flex-grow: 1;
-}
-
-.file-meta {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-right: 15px;
-}
-
-.file-actions {
-    opacity: 0;
-    transition: opacity 0.2s;
-}
-
-.file-item:hover .file-actions {
-    opacity: 1;
-}
-
-.path-breadcrumb {
-    margin-bottom: 0;
-}
-
-.breadcrumb-item {
-    cursor: pointer;
-}
-
-.breadcrumb-item:hover {
-    text-decoration: underline;
-}
-
-.share-item {
-    margin-bottom: 10px;
-}
-
-.share-title {
-    font-weight: bold;
-}
-
-.share-meta {
-    font-size: 0.85rem;
-    color: #6c757d;
-}
-
-.share-actions {
-    margin-top: 5px;
-}
-
-#server-list .active {
-    background-color: #007bff;
-    color: white;
-}
-
-.modal-header {
-    background-color: #f8f9fa;
-    border-bottom: 1px solid #dee2e6;
-}
-
-.modal-footer {
-    background-color: #f8f9fa;
-    border-top: 1px solid #dee2e6;
-}
-
-#share-expiry {
-    font-weight: bold;
-}
 
