@@ -1,37 +1,41 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.18
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.15
 FROM ${BUILD_FROM}
 
-# Mettre à jour l'index des paquets et installer les dépendances
-RUN apk update && \
-    apk add --no-cache \
+# Installation des dépendances
+RUN apk add --no-cache \
     python3 \
     py3-pip \
-    python3-dev \
-    build-base \
-    vsftpd
+    nginx \
+    nodejs \
+    npm
 
-# Copier les fichiers
+# Installation des dépendances Python
+RUN pip3 install --no-cache-dir \
+    ftplib \
+    flask \
+    flask-cors \
+    schedule \
+    pytz
+
+# Copie des fichiers
 COPY rootfs /
+COPY run.sh /
+RUN chmod a+x /run.sh
 
-# Installer les dépendances Python
-RUN pip3 install --no-cache-dir flask pyftpdlib
+# Construction de l'interface web
+WORKDIR /usr/share/ftpbrowser
+RUN npm install
 
-# Créer le répertoire pour l'application
-RUN mkdir -p /usr/share/ftpbrowser
+# Configuration de S6-Overlay
+ENTRYPOINT ["/init"]
+CMD ["/run.sh"]
 
-# Rendre les scripts d'exécution exécutables
-RUN chmod a+x /usr/bin/run.sh && \
-    chmod a+x /etc/services.d/ftp-server/run
-
-# Exposer les ports
-EXPOSE 8099 21
-
-# Exécuter le script de démarrage
-CMD [ "/usr/bin/run.sh" ]
-
+# Labels
 LABEL \
-    io.hass.version="1.0.0" \
+    io.hass.name="FTP Browser" \
+    io.hass.description="Navigateur de fichiers FTP avec fonctionnalités de partage programmable" \
+    io.hass.version="${BUILD_VERSION}" \
     io.hass.type="addon" \
-    io.hass.arch="armhf|armv7|aarch64|amd64|i386"
+    io.hass.arch="${BUILD_ARCH}"
 
 
