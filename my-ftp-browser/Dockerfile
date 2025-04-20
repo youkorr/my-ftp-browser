@@ -7,8 +7,7 @@ RUN apk add --no-cache \
     py3-pip \
     nginx \
     curl \
-    tzdata \
- 
+    tzdata
 
 # Installation des packages Python
 RUN pip3 install --no-cache-dir \
@@ -30,7 +29,6 @@ EXPOSE 8099
 
 # Commande de démarrage
 ENTRYPOINT ["/run.sh"]
-#CMD ["/run.sh"]
 
 # Labels pour la documentation
 LABEL \
