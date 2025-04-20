@@ -15,8 +15,6 @@
   "hassio_api": true,
   "hassio_role": "default",
   "host_network": false,
-  "privileged": [],
-  "devices": [],
   "options": {
     "ftp_servers": [
       {
@@ -58,8 +56,8 @@
       "require_password": "bool?"
     },
     "log_level": "list(trace|debug|info|warning|error|fatal)"
-  },
-  "webui": "http://[HOST]:[PORT:8145]"
+  }
 }
+
 
 
