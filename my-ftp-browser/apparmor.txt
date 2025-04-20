@@ -1,60 +1,65 @@
 #include <tunables/global>
 
 profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
+  # Abstractions de base
+  #---------------------
+  # Accès de base au système et à Python
+  #---------------------
   #include <abstractions/base>
   #include <abstractions/nameservice>
   #include <abstractions/python>
   
-  # Permissions nécessaires pour le serveur FTP
+  # Réseau
   network inet tcp,
   network inet udp,
 
-  # Permissions pour les fichiers système
+  # Exécution des binaires système
   /bin/** ix,
-  /usr/bin/** rix,
-  /usr/bin/with-contenv rixm,
   /sbin/** ix,
   /usr/sbin/** ix,
-  
-  # Permissions pour Python et autres exécutables
+
+  # Exécution des binaires utilisateurs
+  /usr/bin/** rix,
   /usr/local/bin/** ix,
+
+  # Permissions spécifiques pour les exécutables nécessaires
+  /usr/bin/with-contenv rixm,
+  /init rix,                       # <--- Ajout pour lever le blocage tini/init
+  /usr/bin/bashio ix,
+  /usr/lib/bashio/** r,
+
+  # Bibliothèques partagées
   /usr/local/lib/** rm,
   /usr/local/lib64/** rm,
-  
-  # Permissions pour les bibliothèques
   /lib/** rm,
   /usr/lib/** rm,
   /lib64/** rm,
   /usr/lib64/** rm,
-  
-  # Permissions pour les fichiers temporaires
+
+  # Fichiers temporaires
   /tmp/** rwk,
   /var/tmp/** rwk,
-  
-  # Permissions pour les fichiers de l'addon
+
+  # Dossiers de l'addon
   /data/** rw,
   /share/** rw,
   /ssl/** r,
   /media/** rw,
 
-  # Permissions spécifiques pour /run.sh
+  # Fichiers de configuration et scripts
   /run.sh rwix,
-  /usr/bin/bashio ix,
-  /usr/lib/bashio/** r,
-
-  # Permissions pour les fichiers de l'application
   /usr/share/ftpbrowser/** rw,
   /etc/services.d/** rwix,
-  
-  # Permissions pour le journal
+
+  # Journalisation
   /dev/stdout rw,
   /dev/stderr rw,
   /dev/stdin r,
 
-  # Permissions pour s6-overlay (optionnel mais recommandé)
+  # Pour s6-overlay (gestionnaire de services)
   /var/run/s6/** rwk,
-  
-  # Nécessaire pour le système
+
+  # Permissions générales nécessaires
   capability net_bind_service,
   capability dac_override,
 }
