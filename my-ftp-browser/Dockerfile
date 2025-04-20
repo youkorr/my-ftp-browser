@@ -1,4 +1,5 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.15
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
+
 FROM ${BUILD_FROM}
 
 # Installation des dépendances
@@ -6,36 +7,39 @@ RUN apk add --no-cache \
     python3 \
     py3-pip \
     nginx \
-    nodejs \
-    npm
+    curl \
+    tzdata
 
-# Installation des dépendances Python
+# Installation des packages Python
 RUN pip3 install --no-cache-dir \
-    ftplib \
-    flask \
-    flask-cors \
-    schedule \
-    pytz
+    Flask==2.0.1 \
+    requests==2.26.0 \
+    PyJWT==2.1.0 \
+    python-dateutil==2.8.2
 
-# Copie des fichiers
+# Copie des fichiers dans l'image
 COPY rootfs /
 COPY run.sh /
+
+# Rendre les scripts exécutables
 RUN chmod a+x /run.sh
 
-# Construction de l'interface web
-WORKDIR /usr/share/ftpbrowser
-RUN npm install
+# Configuration de S6 Overlay pour les services
+RUN chmod a+x /etc/services.d/*/run
 
-# Configuration de S6-Overlay
-ENTRYPOINT ["/init"]
-CMD ["/run.sh"]
+# Port d'exposition pour l'interface web
+EXPOSE 8099
 
-# Labels
+# Commande de démarrage
+ENTRYPOINT ["/run.sh"]
+
+# Labels pour la documentation
 LABEL \
-    io.hass.name="FTP Browser" \
-    io.hass.description="Navigateur de fichiers FTP avec fonctionnalités de partage programmable" \
-    io.hass.version="${BUILD_VERSION}" \
+    io.hass.name="FTP Browser & Media Server" \
+    io.hass.description="Access FTP servers with a user-friendly web interface, share files, and stream media" \
     io.hass.type="addon" \
-    io.hass.arch="${BUILD_ARCH}"
+    io.hass.version="${BUILD_VERSION}" \
+    maintainer="Your Name <your.email@example.com>"
+
 
 
