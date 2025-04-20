@@ -4,12 +4,12 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
   #include <abstractions/nameservice>
   #include <abstractions/python>
-  
+
   # Permissions nécessaires pour le serveur FTP
   network inet tcp,
   network inet udp,
 
-  # Permissions pour les fichiers système
+  # Permissions pour les binaires système
   /bin/** ix,
   /usr/bin/** ix,
   /sbin/** ix,
@@ -29,6 +29,8 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   # Permissions pour les fichiers temporaires
   /tmp/** rwk,
   /var/tmp/** rwk,
+  /run/** rw,
+  /var/run/** rw,
   
   # Permissions pour les fichiers de l'addon
   /data/** rw,
@@ -40,6 +42,11 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   /usr/share/ftpbrowser/** rw,
   /etc/services.d/** rwix,
   
+  # Permissions spécifiques pour /run.sh
+  /run.sh rwx,
+  /usr/bin/bashio ix,
+  /usr/lib/bashio/** r,
+  
   # Permissions pour le journal
   /dev/stdout rw,
   /dev/stderr rw,
@@ -48,4 +55,6 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   # Nécessaire pour le système
   capability net_bind_service,
   capability dac_override,
+  capability sys_admin,
+  capability sys_resource,
 }
