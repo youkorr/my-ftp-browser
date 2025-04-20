@@ -12,7 +12,7 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   # Permissions pour les fichiers système
   /bin/** ix,
   /usr/bin/** rix,
-  /usr/bin/with-contenv rix,
+  /usr/bin/with-contenv rixm,
   /sbin/** ix,
   /usr/sbin/** ix,
   
@@ -42,7 +42,6 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   /usr/bin/bashio ix,
   /usr/lib/bashio/** r,
 
-
   # Permissions pour les fichiers de l'application
   /usr/share/ftpbrowser/** rw,
   /etc/services.d/** rwix,
@@ -51,8 +50,12 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   /dev/stdout rw,
   /dev/stderr rw,
   /dev/stdin r,
+
+  # Permissions pour s6-overlay (optionnel mais recommandé)
+  /var/run/s6/** rwk,
   
   # Nécessaire pour le système
   capability net_bind_service,
   capability dac_override,
 }
+
