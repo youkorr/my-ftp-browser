@@ -8,7 +8,7 @@ RUN apk add --no-cache \
     nginx \
     curl \
     tzdata \
-    tini
+ 
 
 # Installation des packages Python
 RUN pip3 install --no-cache-dir \
