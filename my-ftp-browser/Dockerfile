@@ -1,9 +1,9 @@
 ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
 
-
-# Installer les dépendances
-RUN apk add --no-cache \
+# Mettre à jour et installer les dépendances
+RUN apk update && \
+    apk add --no-cache \
     python3 \
     py3-pip \
     python3-dev \
