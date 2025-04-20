@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     py3-pip \
     nginx \
     curl \
-    tzdata
+    tzdata \
+    tini
 
 # Installation des packages Python
 RUN pip3 install --no-cache-dir \
@@ -27,8 +28,7 @@ RUN chmod a+x /etc/services.d/*/run
 # Port d'exposition pour l'interface web
 EXPOSE 8099
 
-# Commande de démarrage (utiliser soit CMD soit ENTRYPOINT, pas les deux)
-ENTRYPOINT ["/usr/bin/tini", "-s", "--"]
+# Commande de démarrage
 CMD ["/run.sh"]
 
 # Labels pour la documentation
