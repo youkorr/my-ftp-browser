@@ -15,19 +15,8 @@ jq '.' $CONFIG_PATH > $SERVER_CONFIG
 # Informations de démarrage
 bashio::log.info "Démarrage de l'addon FTP Browser"
 
-# Débogage
-bashio::log.info "------------------------------------"
-bashio::log.info "Vérification des fichiers de configuration:"
-ls -la /etc/ftpbrowser/
-bashio::log.info "------------------------------------"
-bashio::log.info "Vérification des services S6:"
-ls -la /etc/services.d/
-bashio::log.info "------------------------------------"
-bashio::log.info "Vérification des services FTP-Server:"
-ls -la /etc/services.d/ftp-server/
-bashio::log.info "------------------------------------"
-
-# Le processus S6 va démarrer automatiquement les services
+# Démarrer le serveur Python directement
+python3 /usr/share/ftpbrowser/api/server.py
 
 
 
