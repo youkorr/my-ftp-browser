@@ -1,4 +1,4 @@
-#!/command/with-contenv bashio
+#!/bin/bash
 set -e
 
 # Récupérer la configuration
@@ -10,12 +10,11 @@ mkdir -p /etc/ftpbrowser
 mkdir -p /data/ftpbrowser/shares
 
 # Extraire les configurations pour l'API Python
-jq '.' $CONFIG_PATH > $SERVER_CONFIG
+if [ -f "$CONFIG_PATH" ]; then
+    cp "$CONFIG_PATH" "$SERVER_CONFIG"
+fi
 
-# Informations de démarrage
-bashio::log.info "Démarrage de l'addon FTP Browser"
-
-# Démarrer le serveur Python directement
+# Démarrer le serveur Python
 python3 /usr/share/ftpbrowser/api/server.py
 
 
