@@ -29,7 +29,8 @@ RUN chmod a+x /etc/services.d/*/run
 EXPOSE 8099
 
 # Commande de démarrage
-CMD ["/run.sh"]
+ENTRYPOINT ["/run.sh"]
+#CMD ["/run.sh"]
 
 # Labels pour la documentation
 LABEL \
