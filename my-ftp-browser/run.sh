@@ -37,6 +37,8 @@ bashio::log.info "Suppression autorisée: $ALLOW_DELETE"
 bashio::log.info "Démarrage de l'API serveur..."
 cd /usr/share/ftpbrowser/api
 python3 server.py &
+# Démarrer S6 Overlay
+exec /usr/bin/s6-svscan /etc/services.d
 
 # Attendre que les services soient prêts
 sleep 2
