@@ -1,9 +1,9 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.18
+ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
 
-# Mettre à jour l'index des paquets et installer les dépendances
-RUN apk update && \
-    apk add --no-cache \
+
+# Installer les dépendances
+RUN apk add --no-cache \
     python3 \
     py3-pip \
     python3-dev \
@@ -19,11 +19,11 @@ RUN pip3 install --no-cache-dir flask pyftpdlib
 # Créer le répertoire pour l'application
 RUN mkdir -p /usr/share/ftpbrowser
 
-# Rendre les scripts d'exécution exécutables
-RUN chmod a+x /usr/bin/run.sh && \
-    chmod a+x /etc/services.d/ftp-server/run
+# Rendre le script d'exécution exécutable
+RUN chmod a+x /usr/bin/run.sh
+RUN chmod a+x /etc/services.d/ftp-server/run
 
-# Exposer les ports
+# Exposer le port
 EXPOSE 8099 21
 
 # Exécuter le script de démarrage
