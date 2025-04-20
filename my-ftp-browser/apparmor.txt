@@ -1,56 +1,56 @@
 #include <tunables/global>
 
-profile 753ab8a8_my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
+profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   #include <abstractions/base>
   #include <abstractions/nameservice>
   #include <abstractions/python>
-
-  # Réseau
+  
+  # Permissions nécessaires pour le serveur FTP
   network inet tcp,
   network inet udp,
 
-  # Permissions pour les binaires
+  # Permissions pour les fichiers système
   /bin/** ix,
   /usr/bin/** ix,
   /sbin/** ix,
   /usr/sbin/** ix,
-
-  # Python et bibliothèques
+  
+  # Permissions pour Python et autres exécutables
   /usr/local/bin/** ix,
-  /usr/local/lib/** r,
-  /usr/local/lib64/** r,
-  /lib/** r,
-  /usr/lib/** r,
-  /lib64/** r,
-  /usr/lib64/** r,
-
-  # Fichiers temporaires
+  /usr/local/lib/** rm,
+  /usr/local/lib64/** rm,
+  
+  # Permissions pour les bibliothèques
+  /lib/** rm,
+  /usr/lib/** rm,
+  /lib64/** rm,
+  /usr/lib64/** rm,
+  
+  # Permissions pour les fichiers temporaires
   /tmp/** rwk,
   /var/tmp/** rwk,
-  /run/** rw,
-  /var/run/** rw,
-
-  # Fichiers de l'addon
+  
+  # Permissions pour les fichiers de l'addon
   /data/** rw,
   /share/** rw,
   /ssl/** r,
   /media/** rw,
 
-  # Application spécifique
-  /usr/share/ftpbrowser/** rw,
-  /etc/services.d/** rwix,
-
-  # Script principal
+  # Permissions spécifiques pour /run.sh
   /run.sh rwx,
   /usr/bin/bashio ix,
   /usr/lib/bashio/** r,
 
-  # Journaux
+  # Permissions pour les fichiers de l'application
+  /usr/share/ftpbrowser/** rw,
+  /etc/services.d/** rwix,
+  
+  # Permissions pour le journal
   /dev/stdout rw,
   /dev/stderr rw,
   /dev/stdin r,
-
-  # Capacités système
+  
+  # Nécessaire pour le système
   capability net_bind_service,
   capability dac_override,
 }
