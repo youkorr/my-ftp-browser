@@ -1,52 +1,34 @@
-#!/usr/bin/with-contenv bashio
+#!/command/with-contenv bashio
+set -e
 
-# Obtenir la configuration depuis le fichier JSON
+# Récupérer la configuration
 CONFIG_PATH=/data/options.json
-FTP_USER=$(bashio::config 'username')
-FTP_PASS=$(bashio::config 'password')
-FTP_PORT=$(bashio::config 'port')
-SSL=$(bashio::config 'ssl')
-PASSIVE_MODE=$(bashio::config 'passive')
-ALLOW_UPLOAD=$(bashio::config 'allow_upload')
-ALLOW_DELETE=$(bashio::config 'allow_delete')
-
-# Configurer les variables d'environnement pour l'API Python
-export FTP_USER=$FTP_USER
-export FTP_PASS=$FTP_PASS
-export FTP_PORT=$FTP_PORT
-export SSL=$SSL
-export PASSIVE_MODE=$PASSIVE_MODE
-export ALLOW_UPLOAD=$ALLOW_UPLOAD
-export ALLOW_DELETE=$ALLOW_DELETE
+SERVER_CONFIG=/etc/ftpbrowser/server.json
 
 # Créer les répertoires nécessaires
-mkdir -p /data/ftp-browser
-mkdir -p /data/ftp-browser/shares
-mkdir -p /data/ftp-browser/temp
+mkdir -p /etc/ftpbrowser
+mkdir -p /data/ftpbrowser/shares
 
-# Afficher les informations de démarrage
-bashio::log.info "Démarrage du serveur FTP..."
-bashio::log.info "Port FTP: $FTP_PORT"
-bashio::log.info "SSL activé: $SSL"
-bashio::log.info "Mode passif: $PASSIVE_MODE"
-bashio::log.info "Upload autorisé: $ALLOW_UPLOAD"
-bashio::log.info "Suppression autorisée: $ALLOW_DELETE"
+# Extraire les configurations pour l'API Python
+jq '.' $CONFIG_PATH > $SERVER_CONFIG
 
-# Démarrer le serveur API Python en arrière-plan
-bashio::log.info "Démarrage de l'API serveur..."
-cd /usr/share/ftpbrowser/api || { bashio::log.error "Répertoire API introuvable"; exit 1; }
-python3 server.py &
-SERVER_PID=$!
+# Informations de démarrage
+bashio::log.info "Démarrage de l'addon FTP Browser"
 
-# Vérifier si le processus de l'API a démarré correctement
-if ! kill -0 "$SERVER_PID" 2>/dev/null; then
-    bashio::log.error "Échec du démarrage de l'API serveur."
-    exit 1
-fi
+# Débogage
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des fichiers de configuration:"
+ls -la /etc/ftpbrowser/
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des services S6:"
+ls -la /etc/services.d/
+bashio::log.info "------------------------------------"
+bashio::log.info "Vérification des services FTP-Server:"
+ls -la /etc/services.d/ftp-server/
+bashio::log.info "------------------------------------"
 
-# Démarrer S6 Overlay pour superviser les services
-bashio::log.info "Démarrage de S6 Overlay..."
-exec /usr/bin/s6-svscan /etc/services.d
+# Le processus S6 va démarrer automatiquement les services
+
 
 
 
