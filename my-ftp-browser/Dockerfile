@@ -5,10 +5,9 @@ FROM ${BUILD_FROM}
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    nginx \
     tzdata
 
-# Installer les dépendances Python en une seule couche
+# Installer les dépendances Python
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir \
     Flask==2.0.1 \
@@ -21,25 +20,23 @@ RUN pip3 install --no-cache-dir --upgrade pip && \
 COPY rootfs /
 COPY run.sh /
 
-# Modifier les permissions pour les scripts
+# Modifier les permissions
 RUN chmod a+x \
     /run.sh \
-    /etc/services.d/nginx/run \
     /etc/services.d/ftp-server/run \
     /usr/share/ftpbrowser/api/server.py
 
 # Port d'exposition pour l'interface web
-EXPOSE 5000 8145
+EXPOSE 8145
 
 # S6-Overlay comme point d'entrée
 ENTRYPOINT ["/init"]
 
-# Labels pour la documentation
+# Labels
 LABEL \
     io.hass.name="FTP Browser & Media Server" \
-    io.hass.description="Access FTP servers with a user-friendly web interface, share files, and stream media" \
+    io.hass.description="Access FTP servers with a user-friendly web interface" \
     io.hass.type="addon" \
-    io.hass.version="${BUILD_VERSION}" \
-    maintainer="Your Name <your.email@example.com>"
+    io.hass.version="${BUILD_VERSION}"
 
 
