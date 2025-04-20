@@ -37,7 +37,7 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   /media/** rw,
 
   # Permissions spécifiques pour /run.sh
-  /run.sh/** rwx,
+  /run.sh/** rw,
   /usr/bin/bashio ix,
   /usr/lib/bashio/** r,
 
