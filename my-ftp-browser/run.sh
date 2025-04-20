@@ -1,6 +1,6 @@
 #!/usr/bin/with-contenv bashio
 
-# Obtenir la configuration
+# Obtenir la configuration depuis le fichier JSON
 CONFIG_PATH=/data/options.json
 FTP_USER=$(bashio::config 'username')
 FTP_PASS=$(bashio::config 'password')
@@ -32,21 +32,21 @@ bashio::log.info "Mode passif: $PASSIVE_MODE"
 bashio::log.info "Upload autorisé: $ALLOW_UPLOAD"
 bashio::log.info "Suppression autorisée: $ALLOW_DELETE"
 
-
-# Démarrer le serveur API Python
+# Démarrer le serveur API Python en arrière-plan
 bashio::log.info "Démarrage de l'API serveur..."
-cd /usr/share/ftpbrowser/api
+cd /usr/share/ftpbrowser/api || { bashio::log.error "Répertoire API introuvable"; exit 1; }
 python3 server.py &
-# Démarrer S6 Overlay
-exec /usr/bin/s6-svscan /etc/services.d
-exec python3 server.py
-# Attendre que les services soient prêts
-sleep 2
+SERVER_PID=$!
 
-# Garder le conteneur en vie
-while true; do
-    sleep 60
-done
+# Vérifier si le processus de l'API a démarré correctement
+if ! kill -0 "$SERVER_PID" 2>/dev/null; then
+    bashio::log.error "Échec du démarrage de l'API serveur."
+    exit 1
+fi
+
+# Démarrer S6 Overlay pour superviser les services
+bashio::log.info "Démarrage de S6 Overlay..."
+exec /usr/bin/s6-svscan /etc/services.d
 
 
 
