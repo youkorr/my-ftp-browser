@@ -8,7 +8,6 @@ RUN apk update && \
     py3-pip \
     python3-dev \
     build-base \
-    vsftpd
 
 # Copier les fichiers
 COPY rootfs /
