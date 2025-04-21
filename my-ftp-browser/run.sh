@@ -44,12 +44,9 @@ if ! kill -0 "$SERVER_PID" 2>/dev/null; then
     exit 1
 fi
 
-#!/usr/bin/env bash
-set -e
+#!/usr/bin/with-contenv bash
 
-bashio::log.info "Démarrage du serveur API FTP Browser..."
-cd /usr/share/ftpbrowser/api
-exec python3 server.py
+exec /run.sh
 
 
 
