@@ -1,8 +1,0 @@
-#!/command/with-contenv bashio
-# ==============================================================================
-# Home Assistant Community Add-on: FTP
-# Catches output from vsFTPd server
-# ==============================================================================
-bashio::log.info "Starting Log tailer..."
-touch /var/log/vsftpd.log
-exec tail -n0 -F /var/log/vsftpd.log
