@@ -20,10 +20,6 @@ RUN pip3 install --no-cache-dir \
 COPY rootfs/ /
 COPY run.sh /
 
-# Debug : vérifie la présence des fichiers
-RUN ls -l /etc/services.d/ftp-server/
-RUN ls -l /
-
 # Rendre les scripts exécutables
 RUN chmod +x /etc/services.d/ftp-server/run
 RUN chmod +x /run.sh
@@ -38,6 +34,7 @@ LABEL \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Your Name <your.email@example.com>"
+
 
 
 
