@@ -19,12 +19,16 @@ profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
   /usr/sbin/** ix,
 
   # Exécution des binaires utilisateurs
-  /usr/bin/** rix,
+  /usr/bin/** ix,
   /usr/local/bin/** ix,
 
   # Permissions spécifiques pour les exécutables nécessaires
   /usr/bin/with-contenv rixm,
-  /init rix,                       # <--- Ajout pour lever le blocage tini/init
+  /init ix,
+  /command/** ix,
+  /package/** ix,
+  /run/s6*/** ix,
+  /run/service/** ix,
   /usr/bin/bashio ix,
   /usr/lib/bashio/** r,
 
