@@ -44,9 +44,12 @@ if ! kill -0 "$SERVER_PID" 2>/dev/null; then
     exit 1
 fi
 
-# Démarrer S6 Overlay pour superviser les services
-bashio::log.info "Démarrage de S6 Overlay..."
-exec /usr/bin/s6-svscan /etc/services.d
+#!/usr/bin/env bash
+set -e
+
+bashio::log.info "Démarrage du serveur API FTP Browser..."
+cd /usr/share/ftpbrowser/api
+exec python3 server.py
 
 
 
