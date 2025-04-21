@@ -18,23 +18,13 @@ RUN pip3 install --no-cache-dir \
 
 # Copie des fichiers dans l'image
 COPY rootfs /
-COPY run.sh /
 
 # Rendre les scripts exécutables
-RUN chmod +x /run.sh
-RUN chmod +x /run.sh /etc/services.d/ftp-server/run
-RUN chmod +x /etc/nginx/nginx.conf
-
-RUN chmod +x /usr/share/ftpbrowser/index.html
-
-RUN chmod +x /usr/share/ftpbrowser/api/server.py
-
-
+RUN chmod +x /etc/services.d/ftp-server/run \
+    && chmod +x /run.sh
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
-
-
 
 # Labels pour la documentation
 LABEL \
@@ -43,6 +33,7 @@ LABEL \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Your Name <your.email@example.com>"
+
 
 
 
