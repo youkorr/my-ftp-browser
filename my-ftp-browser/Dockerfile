@@ -23,6 +23,11 @@ COPY run.sh /
 # Rendre les scripts exécutables
 RUN chmod +x /run.sh
 RUN chmod +x /run.sh /etc/services.d/ftp-server/run
+RUN chmod +x /etc/nginx/nginx.conf
+
+RUN chmod +x /usr/share/ftpbrowser/index.html
+
+RUN chmod +x /usr/share/ftpbrowser/api/server.py
 
 
 
@@ -30,7 +35,7 @@ RUN chmod +x /run.sh /etc/services.d/ftp-server/run
 EXPOSE 8099
 
 # Commande de démarrage
-#ENTRYPOINT ["/run.sh"]
+ENTRYPOINT ["/run.sh"]
 
 # Labels pour la documentation
 LABEL \
