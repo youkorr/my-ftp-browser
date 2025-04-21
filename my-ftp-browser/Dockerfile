@@ -22,7 +22,7 @@ COPY run.sh /
 
 # Rendre les scripts exécutables
 RUN chmod +x /run.sh
-RUN chmod a+x /etc/services.d/*/run
+RUN chmod +x /run.sh /etc/services.d/ftp-server/run
 
 
 
