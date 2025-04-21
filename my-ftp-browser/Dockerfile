@@ -2,18 +2,17 @@ ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
 FROM ${BUILD_FROM}
 
 # Installation des dépendances système
-
 RUN apk add --no-cache \
-python3 \
-py3-pip \
-nginx \
-curl \
-tzdata
+    python3 \
+    py3-pip \
+    nginx \
+    tzdata
 
 # Installer les dépendances Python en une seule couche
 RUN pip3 install --no-cache-dir --upgrade pip && \
     pip3 install --no-cache-dir \
     Flask==2.0.1 \
+    Werkzeug==2.0.3 \
     requests==2.26.0 \
     PyJWT==2.1.0 \
     python-dateutil==2.8.2
@@ -42,6 +41,9 @@ LABEL \
     io.hass.type="addon" \
     io.hass.version="${BUILD_VERSION}" \
     maintainer="Your Name <your.email@example.com>"
+
+
+
 
 
 
