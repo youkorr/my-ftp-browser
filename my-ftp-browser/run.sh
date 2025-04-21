@@ -44,9 +44,9 @@ if ! kill -0 "$SERVER_PID" 2>/dev/null; then
     exit 1
 fi
 
-#!/usr/bin/with-contenv bash
-
-exec /run.sh
+# Démarrer S6 Overlay pour superviser les services
+bashio::log.info "Démarrage de S6 Overlay..."
+exec /usr/bin/s6-svscan /etc/services.d
 
 
 
