@@ -1,39 +1,35 @@
-ARG BUILD_FROM=ghcr.io/hassio-addons/base:13.0.0
-FROM ${BUILD_FROM}
+# Utiliser l'image de base de Hass.io addons
+FROM ghcr.io/hassio-addons/base:13.0.0
 
-# Installation des dépendances
+# Installer les dépendances et les modules Python nécessaires
 RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    nginx \
-    curl \
-    tzdata
+    python3 \                     # Installation de Python 3
+    py3-pip \                     # Installation de pip pour Python
+    nginx \                        # Installation de NGINX
+    netcat-openbsd                # Outil de diagnostic réseau (facultatif)
 
-# Installation des packages Python
-RUN pip3 install --no-cache-dir \
-    Flask==2.0.1 \
-    requests==2.26.0 \
-    PyJWT==2.1.0 \
-    python-dateutil==2.8.2
+# Installer les packages Python nécessaires
+RUN pip3 install --no-cache-dir flask  # Installation de Flask
 
-# Copie des fichiers dans l'image
-COPY rootfs/ /
-COPY run.sh /
+# Copier les fichiers de configuration et le script de démarrage
+COPY rootfs/ /  # Copier la structure du système dans le conteneur
+COPY run.sh /   # Copier le script de démarrage
 
-# Rendre les scripts exécutables
-RUN chmod +x /etc/services.d/ftp-server/run
-RUN chmod +x /run.sh
+# Modifier les permissions pour les scripts
+RUN chmod +x /run.sh \           # Autoriser l'exécution du script de démarrage
+    && chmod +x /etc/services.d/nginx/run \  # Autoriser l'exécution du script NGINX
+    && chmod +x /etc/services.d/ftp-server/run \  # Autoriser l'exécution du script du serveur FTP
+    && chmod +x /usr/share/ftpbrowser/api/server.py  # Autoriser l'exécution du script de l'API FTP
 
-# Port d'exposition pour l'interface web
-EXPOSE 8099
+# Créer les répertoires nécessaires
+RUN mkdir -p /etc/ftpbrowser /data/ftpbrowser/shares  # Création des répertoires de configuration et de partages
 
-# Labels pour la documentation
-LABEL \
-    io.hass.name="FTP Browser & Media Server" \
-    io.hass.description="Access FTP servers with a user-friendly web interface, share files, and stream media" \
-    io.hass.type="addon" \
-    io.hass.version="${BUILD_VERSION}" \
-    maintainer="Your Name <your.email@example.com>"
+# Exposer le port utilisé par l'application
+EXPOSE 8099  # Exposition du port où l'application écoute
+
+# Point d'entrée du conteneur
+ENTRYPOINT ["/init"]  # Point d'entrée du conteneur
+
 
 
 
