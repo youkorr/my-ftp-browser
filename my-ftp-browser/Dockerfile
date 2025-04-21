@@ -35,7 +35,7 @@ RUN chmod +x /usr/share/ftpbrowser/api/server.py
 EXPOSE 8099
 
 # Commande de démarrage
-ENTRYPOINT ["/run.sh"]
+ENTRYPOINT ["/init"]
 
 # Labels pour la documentation
 LABEL \
