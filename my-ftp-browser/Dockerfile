@@ -21,7 +21,7 @@ COPY rootfs /
 COPY run.sh /
 
 # Rendre les scripts exécutables
-
+RUN chmod +x /run.sh
 RUN chmod +x /run.sh /etc/services.d/ftp-server/run
 RUN chmod +x /etc/nginx/nginx.conf
 
