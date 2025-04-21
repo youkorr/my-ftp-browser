@@ -21,7 +21,7 @@ COPY rootfs /
 COPY run.sh /
 
 # Rendre les scripts exécutables
-RUN chmod +x /run.sh
+
 RUN chmod +x /run.sh /etc/services.d/ftp-server/run
 RUN chmod +x /etc/nginx/nginx.conf
 
@@ -29,7 +29,7 @@ RUN chmod +x /usr/share/ftpbrowser/index.html
 
 RUN chmod +x /usr/share/ftpbrowser/api/server.py
 
-CMD ["/run.sh"]
+
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
