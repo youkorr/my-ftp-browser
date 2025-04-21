@@ -29,7 +29,7 @@ RUN chmod +x /usr/share/ftpbrowser/index.html
 
 RUN chmod +x /usr/share/ftpbrowser/api/server.py
 
-
+CMD ["/run.sh"]
 
 # Port d'exposition pour l'interface web
 EXPOSE 8099
