@@ -1,6 +1,3 @@
 #!/usr/bin/with-contenv bash
-set -e
+
 exec /run.sh
-bashio::log.info "Démarrage du serveur API FTP Browser..."
-cd /usr/share/ftpbrowser/api
-exec python3 server.py
