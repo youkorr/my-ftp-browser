@@ -1,78 +1,101 @@
-# AppArmor Profile Analysis for FTP Browser
+#include <tunables/global>
 
-## Overview
+profile my-ftp-browser flags=(attach_disconnected,mediate_deleted) {
+  # Abstractions de base
+  #include <abstractions/base>
+  #include <abstractions/nameservice>
+  #include <abstractions/python>
+  
+  # Réseau - nécessaire pour FTP
+  network inet tcp,
+  network inet udp,
 
-This AppArmor profile named `my-ftp-browser` is designed to confine an FTP browser application, likely running in a containerized environment such as a Home Assistant add-on. The profile uses the flags `attach_disconnected` and `mediate_deleted`, which allow the profile to be applied to processes that have already started and to mediate access to deleted files that are still open.
+  # Exécution des binaires système avec héritage
+  /bin/** ix,
+  /sbin/** ix,
+  /usr/sbin/** ix,
+  /usr/bin/** ix,
+  /usr/local/bin/** ix,
 
-## Included Abstractions
+  # Permissions spécifiques pour les exécutables critiques
+  /usr/bin/with-contenv rixm,
+  
+  # Permissions complètes pour /init (lecture, écriture, exécution, mappage mémoire)
+  /init mrwixl,
+  
+  # Permissions pour les composants du système s6-overlay
+  /command/** rix,
+  /package/** rix,
+  /run/s6/** rwix,
+  /run/s6-linux-init-container** rwix,
+  /run/s6-rc** rwix,
+  /run/service/** rwix,
+  
+  # Permissions pour bashio et ses composants
+  /usr/bin/bashio rix,
+  /usr/lib/bashio/** r,
 
-The profile includes several standard AppArmor abstractions:
-- `base`: Provides basic permissions needed by most applications
-- `nameservice`: Allows DNS and other name resolution services
-- `python`: Grants permissions needed to run Python applications
+  # Bibliothèques partagées - lecture et mappage mémoire
+  /usr/local/lib/** rm,
+  /usr/local/lib64/** rm,
+  /lib/** rm,
+  /usr/lib/** rm,
+  /lib64/** rm,
+  /usr/lib64/** rm,
 
-## Network Permissions
+  # Fichiers temporaires - lecture, écriture, verrouillage
+  /tmp/** rwk,
+  /var/tmp/** rwk,
 
-The profile allows the application to use TCP and UDP networking over IPv4:
-```
-network inet tcp,
-network inet udp,
-```
-This is expected for an FTP client which needs network connectivity.
+  # Dossiers de l'addon - lecture et écriture
+  /data/** rw,
+  /share/** rw,
+  /ssl/** r,
+  /media/** rw,
 
-## Executable Permissions
+  # Fichiers de configuration et scripts - lecture, écriture, exécution
+  /run.sh rwix,
+  /usr/share/ftpbrowser/** rw,
+  /etc/services.d/** rwix,
+  /etc/cont-init.d/** rwix,
+  /etc/cont-finish.d/** rwix,
+  /etc/fix-attrs.d/** rwix,
 
-The profile grants extensive execution permissions:
-- All binaries in `/bin/**`, `/sbin/**`, `/usr/sbin/**`, `/usr/bin/**`, and `/usr/local/bin/**` can be executed with inheritance (`ix`)
-- Specific executables like `/usr/bin/with-contenv` have read, execute, and memory map permissions (`rixm`)
-- Various system components like `/init`, `/command/**`, and `/package/**` can be executed
+  # Journalisation et entrée standard
+  /dev/stdout rw,
+  /dev/stderr rw,
+  /dev/stdin r,
+  /proc/*/fd/* rw,
 
-This is quite permissive and allows the application to run virtually any system binary.
+  # Accès au système de fichiers proc pour les informations système
+  /proc/sys/kernel/hostname r,
+  /proc/sys/kernel/random/uuid r,
+  
+  # Pour s6-overlay (gestionnaire de services)
+  /var/run/s6/** rwk,
+  /run/s6/services/** rwix,
 
-## File Access Permissions
-
-The profile grants:
-- Read access to shared libraries in standard locations
-- Read/write/lock access to temporary directories (`/tmp/**`, `/var/tmp/**`)
-- Read/write access to application data directories (`/data/**`, `/share/**`)
-- Read-only access to SSL certificates (`/ssl/**`)
-- Read/write access to media files (`/media/**`)
-- Read/write/execute access to the application's main script (`/run.sh`)
-- Read/write access to application-specific files (`/usr/share/ftpbrowser/**`)
-- Read/write/execute access to service configuration (`/etc/services.d/**`)
-
-## Standard I/O and Logging
-
-The profile allows:
-- Read/write access to stdout and stderr for logging
-- Read access to stdin for input
-
-## Special Capabilities
-
-The profile grants two specific capabilities:
-- `net_bind_service`: Allows the application to bind to privileged ports (below 1024)
-- `dac_override`: Allows the application to bypass file read permission checks
-
-## Security Assessment
-
-1. **Execution Permissions**: The profile is quite permissive in allowing execution of system binaries. This could potentially be narrowed to only the specific binaries needed.
-
-2. **File Access**: The profile grants broad read/write access to several directories. While necessary for functionality, this increases the attack surface.
-
-3. **Capabilities**: The `dac_override` capability is particularly powerful as it allows bypassing file permission checks. This should be carefully evaluated for necessity.
-
-4. **Container Integration**: The profile appears designed for a containerized environment (references to s6-overlay, service management), which provides an additional layer of isolation.
-
-## Recommendations
-
-1. **Narrow Execution Permissions**: Consider limiting executable permissions to only those binaries specifically needed by the application.
-
-2. **Review DAC Override**: Evaluate if the `dac_override` capability is strictly necessary or if more specific permissions could be granted instead.
-
-3. **Limit Network Access**: If the FTP client only needs to connect to specific ports, consider restricting network permissions accordingly.
-
-4. **Regular Auditing**: Regularly review and update this profile as the application evolves to maintain the principle of least privilege.
-
-This profile provides a reasonable security boundary for an FTP browser application, though it could be tightened in several areas for enhanced security.
+  # Permissions pour les sockets et les communications inter-processus
+  /run/socket/** rw,
+  unix peer=(label=my-ftp-browser),
+  
+  # Capacités système nécessaires
+  capability net_bind_service,  # Pour lier aux ports privilégiés
+  capability dac_override,      # Pour outrepasser certaines vérifications d'accès
+  capability sys_admin,         # Pour certaines opérations administratives
+  capability chown,             # Pour changer la propriété des fichiers
+  capability fowner,            # Pour les opérations de propriété de fichiers
+  capability setuid,            # Pour changer l'identité utilisateur
+  capability setgid,            # Pour changer l'identité groupe
+  
+  # Permissions pour les fichiers de périphériques
+  /dev/null rw,
+  /dev/random r,
+  /dev/urandom r,
+  
+  # Accès aux informations système
+  /sys/fs/cgroup/** r,
+  /sys/devices/**/uevent r,
+}
 
 
