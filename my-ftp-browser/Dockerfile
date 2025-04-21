@@ -34,8 +34,7 @@ RUN chmod +x /usr/share/ftpbrowser/api/server.py
 # Port d'exposition pour l'interface web
 EXPOSE 8099
 
-# Commande de démarrage
-ENTRYPOINT [""]
+
 
 # Labels pour la documentation
 LABEL \
